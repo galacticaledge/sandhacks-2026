@@ -99,7 +99,26 @@ def merge(batches: list[list[dict]]) -> list[dict]:
             if r["ppb"] is None and k in out and out[k]["ppb"] is not None:
                 continue
             out[k] = r
-    return sorted(out.values(), key=lambda r: (r["observed_at"], r["site_id"]))
+    rows = sorted(out.values(), key=lambda r: (r["observed_at"], r["site_id"]))
+    drop_failure_spikes(rows)
+    return rows
+
+
+def drop_failure_spikes(rows: list[dict], gap: timedelta = timedelta(hours=24), jump: float = 10.0) -> int:
+    """Blank an orange reading that is the last value before a long outage and a 10x jump from the hour before
+    (San Ysidro 2024: 0.3, 19.0, 703.1, then 86 days of nothing; SDAPCD's own tool has no value for that hour)."""
+    by_site = defaultdict(list)
+    for r in rows:
+        if r["ppb"] is not None:
+            by_site[r["site_id"]].append(r)
+    n = 0
+    for rs in by_site.values():
+        for prev, cur, nxt in zip(rs, rs[1:], rs[2:]):
+            if (cur["ppb"] >= ORANGE_PPB and nxt["observed_at"] - cur["observed_at"] > gap
+                    and cur["ppb"] > jump * max(prev["ppb"], 1.0)):
+                cur["ppb"], cur["level"] = None, None
+                n += 1
+    return n
 
 
 def load(paths: list[Path], chunk: int = 5000) -> int:

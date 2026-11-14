@@ -55,3 +55,14 @@ def test_night_of_uses_evening_date():
     assert h2s_history.night_of(datetime(2026, 6, 1, 20, tzinfo=UTC)) is None               # 1 PM PDT
     assert h2s_history.night_of(datetime(2026, 1, 10, 16, tzinfo=UTC)) == date(2026, 1, 9)  # 8 AM PST
     assert h2s_history.night_of(datetime(2026, 1, 10, 17, tzinfo=UTC)) is None              # 9 AM PST
+
+
+def test_failure_spike_before_outage_is_blanked_but_real_peaks_stay():
+    from datetime import datetime, timedelta, timezone
+    from collectors.h2s_history import drop_failure_spikes
+    t0 = datetime(2024, 9, 1, tzinfo=timezone.utc)
+    def row(h, v): return {"site_id": "san_ysidro", "observed_at": t0 + timedelta(hours=h), "ppb": v, "level": "x"}
+    rows = [row(0, 0.3), row(1, 19.0), row(2, 703.1), row(2000, 1.0),          # dies after the spike
+            row(2001, 35.0), row(2002, 306.0), row(2003, 915.0), row(2004, 133.0)]  # a real episode
+    assert drop_failure_spikes(rows) == 1
+    assert rows[2]["ppb"] is None and rows[6]["ppb"] == 915.0
