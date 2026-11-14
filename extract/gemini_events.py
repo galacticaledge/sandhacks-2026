@@ -61,7 +61,7 @@ def extract(text: str, source_url: str) -> list[dict]:
     from google.genai import types
     client = genai.Client(api_key=key)
     resp = client.models.generate_content(
-        model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite"),
+        model=os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"),
         contents=PROMPT + text[:60_000],
         config=types.GenerateContentConfig(response_mime_type="application/json", response_schema=Extraction,
                                            temperature=0),
