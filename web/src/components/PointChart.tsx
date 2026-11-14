@@ -25,7 +25,7 @@ export function PointChart({ times, s, observed, t, lang, height = 220 }: {
           contentStyle={{ background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
         />
         <Area dataKey="band" stroke="none" fill="var(--band)" isAnimationActive={false} />
-        <Line dataKey="p50" stroke="var(--ink)" strokeWidth={2} dot={false} isAnimationActive={false} />
+        <Line dataKey="p50" stroke="var(--accent)" strokeWidth={2.5} dot={false} isAnimationActive={false} />
         {observed && <Scatter dataKey="obs" fill="var(--obs)" shape="circle" isAnimationActive={false} />}
         <ReferenceLine y={30} stroke="#f46d43" strokeDasharray="5 4" label={{ value: t.orange_line, position: "insideTopRight", fontSize: 11, fill: "#c2410c" }} />
       </ComposedChart>
