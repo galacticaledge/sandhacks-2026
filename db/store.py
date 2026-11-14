@@ -271,6 +271,10 @@ def add_subscription(s: dict):
             {**s, "created_at": ts(s["created_at"])})
 
 
+def has_subscription(contact: str, receptor_id: str) -> bool:
+    return bool(query("SELECT 1 FROM subscriptions WHERE contact = :c AND receptor_id = :r", {"c": contact, "r": receptor_id}))
+
+
 def remove_subscription(token: str) -> bool:
     return execute("DELETE FROM subscriptions WHERE token = :t", {"t": token}).rowcount > 0
 

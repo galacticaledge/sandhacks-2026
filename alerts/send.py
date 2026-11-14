@@ -109,7 +109,11 @@ def send_evening_alerts(meta: dict, update: bool = False) -> int:
         if not update and prior:
             continue
         subject, body = render(sub["language"], names[sub["receptor_id"]], ev, f"{base}/api/unsubscribe/{sub['token']}")
-        status = send_email(sub["contact"], subject, body) if sub["channel"] == "email" else "unsupported_channel"
+        try:
+            status = send_email(sub["contact"], subject, body) if sub["channel"] == "email" else "unsupported_channel"
+        except Exception as e:  # one bad address must not stop everyone else's alert
+            log.exception("alert to subscription %s failed", sub["id"])
+            status = f"error {type(e).__name__}"
         store.record_alert(sub["id"], night, meta["run_id"], ev["kind"], status)
         n += 1
     log.info("alerts for run %s (update=%s): %d", meta["run_id"], update, n)
