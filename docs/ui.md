@@ -17,7 +17,12 @@ The forecast level colors are **not** themed. They stay the SDAPCD green/yellow/
 
 ## Layout
 
-- **Sidebar** (floating, rounded 30px): Forecast, Live Map, Replay, Accuracy, Alerts, Settings, plus the skyline and "San Diego, CA" at the bottom. Data-freshness chip and DEMO badge sit above the skyline. Below 1100px it collapses to icons. Below 760px it becomes a sticky top icon bar.
+- **Sidebar** (floating, rounded 30px, subtle grape-to-graphite gradient so it stands apart from the page):
+  - Brand header and a "Menu" label.
+  - Nav items with icon tiles. The active item is grape with a lavender icon tile and a lavender edge marker.
+  - A "Monitors now" card: the three SDAPCD monitors with level swatch and ppb, last-update time, and a pulsing live dot that turns red if readings are more than 90 minutes old. It links to Live Map.
+  - Lavender skyline and "San Diego, CA" at the bottom.
+  - Responsive: below 1100px wide it collapses to icons; below 760px it becomes a sticky top icon bar; on screens under 820px tall the skyline is hidden.
 - **Disclaimer bar** on every page: experimental forecast, not an official advisory, with links to SDAPCD readings and alert sign-up, plus an EN/ES switch.
 - **Forecast** (`#/forecast`, default, matches the frame):
   - Lavender address search.
@@ -31,6 +36,9 @@ The forecast level colors are **not** themed. They stay the SDAPCD green/yellow/
 - **Settings**: language, theme (Dark default per Figma / Light / System), official links.
 
 ## Deviations from the frame
+
+- Sidebar nav text is 17px with icon tiles instead of the frame's 28px labels (requested refinement). The structure, order, grape/lavender active state, skyline and city label are kept.
+- The map card keeps the light OpenFreeMap Positron basemap and has a light base color (#E8E6E3), so it never blends into the dark page while tiles load.
 
 - **Text on the search field and Search button is light, not Graphite.** The frame puts #2F2F2F text on a 30%-lavender field and a grape button, which is barely readable on a dark background (fails WCAG contrast). The field and button shapes, fills and borders match the frame.
 - A brand block (logo + tagline) sits at the top of the sidebar, where the frame has empty space. The disclaimer bar above the content is required on every page.

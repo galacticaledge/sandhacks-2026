@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { get, type Now } from "./api";
-import { fmtDateTime } from "./levels";
+import { fmtDateTime, fmtPpb, levelStyle } from "./levels";
 import { STRINGS, type Lang } from "./i18n";
 import { Icon, Skyline } from "./components/Icons";
 import { AboutPage } from "./pages/AboutPage";
@@ -65,22 +65,40 @@ export default function App() {
     <div className="shell">
       <aside className="sidebar">
         <a className="brand" href="#/forecast">
-          <img src="/favicon.svg" alt="" width={34} height={34} />
+          <img src="/favicon.svg" alt="" width={40} height={40} />
           <span><strong>Smellcast</strong><small>{t.tagline}</small></span>
         </a>
         <nav aria-label="Main">
+          <span className="nav-label">{t.menu}</span>
           {NAV.map((r) => (
             <a key={r} href={`#/${r}`} className={active === r ? "active" : ""} aria-current={active === r ? "page" : undefined}>
-              <Icon name={r} size={36} />
-              <span>{t[`nav_${r}` as keyof typeof t] as string}</span>
+              <span className="nav-icon"><Icon name={r} size={22} /></span>
+              <span className="nav-text">{t[`nav_${r}` as keyof typeof t] as string}</span>
             </a>
           ))}
         </nav>
         <div className="side-foot">
-          <span className={`chip${stale ? " chip-stale" : ""}`} title={t.readings}>● {t.updated} {fmtDateTime(h2sOk, lang)}</span>
-          {now?.demo_mode && <span className="chip chip-demo">DEMO</span>}
-          <Skyline />
-          <strong className="city">{t.city}</strong>
+          <a className="now-card" href="#/live">
+            <div className="now-head">
+              <span>{t.monitors_now}</span>
+              <span className={`live-dot${stale ? " stale" : ""}`} title={stale ? t.stale : t.readings} />
+            </div>
+            {(now?.monitors ?? []).map((m) => {
+              const l = levelStyle(m.level);
+              return (
+                <div className="now-row" key={m.site_id}>
+                  <span className="now-swatch" style={{ background: l?.color ?? "#777", color: l?.ink }} aria-hidden="true">{l?.icon ?? "○"}</span>
+                  <span className="now-name">{m.name.replace(/ \(.*\)/, "")}</span>
+                  <strong>{fmtPpb(m.ppb)}</strong>
+                </div>
+              );
+            })}
+            <small>{t.updated} {fmtDateTime(h2sOk, lang)}{now?.demo_mode ? " · DEMO" : ""}</small>
+          </a>
+          <div className="city-block">
+            <Skyline />
+            <strong className="city">{t.city}</strong>
+          </div>
         </div>
       </aside>
 

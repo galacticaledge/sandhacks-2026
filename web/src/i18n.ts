@@ -1,6 +1,7 @@
 // Spanish strings: HUMAN review by a fluent speaker pending (spec 7).
 const en = {
   tagline: "A weather forecast for sewer gas",
+  menu: "Menu", monitors_now: "Monitors now (ppb)", stale: "Readings are more than 90 minutes old",
   nav_forecast: "Forecast", nav_live: "Live Map", nav_settings: "Settings", city: "San Diego, CA",
   risk_level: "Risk level", lvl_all: "All levels", lvl_yellow: "Yellow or higher", lvl_orange: "Orange or higher",
   all_areas: "All areas", neighborhoods: "Neighborhoods", schools: "Schools", monitors_f: "Monitors",
@@ -55,6 +56,7 @@ export type Strings = typeof en;
 
 const es: Strings = {
   tagline: "Un pronóstico del tiempo para el gas de drenaje",
+  menu: "Menú", monitors_now: "Monitores ahora (ppb)", stale: "Las lecturas tienen más de 90 minutos",
   nav_forecast: "Pronóstico", nav_live: "Mapa en vivo", nav_settings: "Ajustes", city: "San Diego, CA",
   risk_level: "Nivel de riesgo", lvl_all: "Todos los niveles", lvl_yellow: "Amarillo o más", lvl_orange: "Naranja o más",
   all_areas: "Todas las zonas", neighborhoods: "Vecindarios", schools: "Escuelas", monitors_f: "Monitores",
