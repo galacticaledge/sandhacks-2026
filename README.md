@@ -13,7 +13,7 @@ docker compose up -d --build
 ```
 
 - App: http://localhost:8000
-- TimescaleDB (local Tiger Data): `postgresql://smellcast:smellcast@localhost:5432/smellcast`
+- TimescaleDB (local Tiger Data): `postgresql://smellcast:smellcast@localhost:5433/smellcast`
 - Mailpit inbox for alert emails: http://localhost:8025
 
 Run one-off jobs inside the stack, e.g. `docker compose exec smellcast python -m model.run`.
