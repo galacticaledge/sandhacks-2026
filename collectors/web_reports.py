@@ -134,7 +134,8 @@ def bd_get(url: str, ext: str = "html", max_age: timedelta | None = None) -> tup
 
 
 # ---------- step 1: search (each site's own public listing, date-bounded) ----------
-SLUG_HINT = re.compile(r"tijuana|sewage|odor|hydrogen|stench|smell|imperial-beach|south-bay", re.I)
+SLUG_HINT = re.compile(r"tijuana|tj-river|sewage|sewer|odor|hydrogen|stench|smell|imperial-beach|south-bay|"
+                       r"cross-border|air-quality", re.I)
 _KPBS_URL = re.compile(r"<loc>(https://www\.kpbs\.org/[^<]*?/(\d{4})/(\d{2})/(\d{2})/[^<]+)</loc>")
 # Times of San Diego has no server-side search (Jetpack instant search runs in the browser), so we list posts by
 # tag instead. Tag ids looked up 2026-11-14 at /wp-json/wp/v2/tags?search=tijuana|sewage|hydrogen:
@@ -291,11 +292,12 @@ class Selection(BaseModel):
     candidates: list[Candidate]
 
 
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v2"
 PROMPT = """You are given the text of one news article. Your only job is to COPY sentences out of it.
 
-Pick up to 3 sentences that report on sewage odor or hydrogen sulfide (H2S, "sewer gas") from the Tijuana River in
-the South Bay of San Diego (Imperial Beach, Nestor, San Ysidro, Tijuana River Valley), best first. Prefer, in order:
+Pick up to 3 sentences that report on Tijuana River sewage pollution and its odor or hydrogen sulfide (H2S, "sewer
+gas") in the South Bay of San Diego (Imperial Beach, Nestor, San Ysidro, Tijuana River Valley), best first. Each
+sentence must itself mention the odor, the air, hydrogen sulfide, the sewage or a closure. Prefer, in order:
 1. a measured hydrogen sulfide level or an exceedance of a standard,
 2. a description of the odor in the neighborhoods (when, where, how strong),
 3. a sewage spill or flow, a closure (beach, school, road), a health effect, or a statement by a public agency.
@@ -307,7 +309,7 @@ Rules:
   officials acting in their role are fine.
 - topic is one of: odor, h2s_reading (the sentence itself states a measured level), spill, closure, health,
   agency_statement, other.
-- If the article does not report on Tijuana River sewage odor or hydrogen sulfide, return {"candidates": []}.
+- If the article does not report on Tijuana River sewage pollution, return {"candidates": []}.
 
 ARTICLE TEXT:
 """
@@ -327,17 +329,29 @@ def verbatim(quote: str, text: str) -> str | None:
     return flat[i:i + len(q)] if i >= 0 else None
 
 
+# The sentence itself must be about the subject, so an off-topic line from an on-topic article is not shown.
+QUOTE_TERMS = re.compile(r"hydrogen sulfide|\bH2S\b|\bppb\b|parts per billion|odou?rs?\b|smell|stench|sewage|sewer|"
+                         r"wastewater|air quality|\bair\b|clos(?:ed|ure|ing)|pollut", re.I)
+
+
 def pick_quote(candidates: list[dict], text: str) -> dict | None:
-    """First candidate that is found verbatim in the article text (max 500 chars)."""
+    """Best candidate that is found verbatim in the article text (max 500 chars) and names the subject.
+
+    A sentence that states a measured level (digits + ppb) wins; otherwise Gemini's order is kept.
+    """
+    ok = []
     for c in candidates:
         q = verbatim(c.get("quote", ""), text)
-        if not q or len(q) > 500:
+        if not q or len(q) > 500 or not QUOTE_TERMS.search(q):
+            continue
+        if q.count("\u201c") != q.count("\u201d"):  # half of a quotation: not a complete sentence
             continue
         topic = c.get("topic") if c.get("topic") in TOPICS else "other"
         if topic == "h2s_reading" and not re.search(r"\d", q):  # a "reading" must show its number
             topic = "odor" if re.search(r"odou?r|smell|stench", q, re.I) else "other"
-        return {"quote": q, "topic": topic}
-    return None
+        ok.append({"quote": q, "topic": topic})
+    measured = [c for c in ok if re.search(r"\d[\d,.]*\s*(ppb|parts per billion)", c["quote"], re.I)]
+    return (measured or ok or [None])[0]
 
 
 def gemini_candidates(text: str, url: str) -> list[dict]:

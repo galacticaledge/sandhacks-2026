@@ -74,6 +74,12 @@ def test_pick_quote_skips_invented_candidates_and_fixes_reading_label():
     first = text.split("\n")[0]
     assert w.pick_quote([{"quote": first, "topic": "h2s_reading"}], text)["topic"] == "other"  # no number in it
     assert w.pick_quote([{"quote": "Nothing like this is in the article at all.", "topic": "odor"}], text) is None
+    got = w.pick_quote([{"quote": first, "topic": "agency_statement"}, {"quote": READING, "topic": "h2s_reading"}], text)
+    assert got["quote"] == READING                                                      # a measured level wins
+    half = "\u201cThis smell is driving people out of the neighborhood for good."
+    assert w.pick_quote([{"quote": half, "topic": "odor"}], half) is None                # half a quotation
+    off = "If you drive around Imperial Beach, there are so many for rent signs everywhere, she said."
+    assert w.verbatim(off, off) and w.pick_quote([{"quote": off, "topic": "odor"}], off) is None  # not about the subject
 
 
 @pytest.fixture
