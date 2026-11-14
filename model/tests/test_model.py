@@ -126,3 +126,31 @@ def test_ensemble_percentiles_ordered():
     assert np.all(r.p10 <= r.p50 + 1e-6) and np.all(r.p50 <= r.p90 + 1e-6)
     assert ensemble.confidence_label(10, 12) == "high"
     assert ensemble.confidence_label(10, 60) == "low"
+
+
+def test_flow_series_uses_each_days_gauge_and_never_the_issue_day(monkeypatch):
+    from datetime import datetime, timedelta
+    from config import TZ
+    from model import inputs
+    gauge = {"2026-04-01": 10.0, "2026-04-02": 20.0, "2026-04-03": 999.0}  # 04-03 is the partial issue day
+    monkeypatch.setattr(inputs.store, "flow_upto", lambda day, n: [
+        {"date": d, "mgd": v} for d, v in sorted(gauge.items(), reverse=True) if d <= day.isoformat()])
+    plant = {"id": "e1", "event_type": "repair", "quote": "q", "confidence": 0.9, "published_at": None,
+             "starts_at": datetime(2026, 4, 1, tzinfo=TZ), "ends_at": datetime(2026, 4, 9, tzinfo=TZ),
+             "expected_flow_mgd": 50.0, "flow_delta_mgd": None}
+    monkeypatch.setattr(inputs.store, "flow_events", lambda: [plant])
+    as_of = datetime(2026, 4, 3, 17, tzinfo=TZ)
+    times = inputs.hours(datetime(2026, 4, 1, 12, tzinfo=TZ), 72)
+    q, used, src = inputs.flow_series(times, as_of)
+    assert q[0] == 10.0 and q[24] == 20.0          # measured days keep the gauge, the event cannot override them
+    assert 999.0 not in q and src == "gauge 2026-04-02"
+    assert q[-1] == 50.0 and used                  # only hours after the last gauge day take the event
+
+
+def test_hours_steps_in_real_time_across_clock_changes():
+    from datetime import datetime, timezone
+    from config import TZ
+    from model.inputs import hours
+    for start in (datetime(2026, 10, 31, 17, tzinfo=TZ), datetime(2026, 3, 7, 17, tzinfo=TZ)):
+        h = [t.astimezone(timezone.utc) for t in hours(start, 28)]
+        assert len(set(h)) == 28 and all((b - a).total_seconds() == 3600 for a, b in zip(h, h[1:]))
