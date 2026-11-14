@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { get, type Now } from "./api";
 import { fmtDateTime } from "./levels";
 import { STRINGS, type Lang } from "./i18n";
-import { AboutPage } from "./pages/AboutPage";
-import { AccuracyPage } from "./pages/AccuracyPage";
-import { AlertsPage } from "./pages/AlertsPage";
-import { MapPage } from "./pages/MapPage";
-import { ReplayPage } from "./pages/ReplayPage";
-import { TonightPage } from "./pages/TonightPage";
+
+// Each page is its own chunk, so the map and chart libraries load only where used.
+const AboutPage = lazy(() => import("./pages/AboutPage").then((m) => ({ default: m.AboutPage })));
+const AccuracyPage = lazy(() => import("./pages/AccuracyPage").then((m) => ({ default: m.AccuracyPage })));
+const AlertsPage = lazy(() => import("./pages/AlertsPage").then((m) => ({ default: m.AlertsPage })));
+const MapPage = lazy(() => import("./pages/MapPage").then((m) => ({ default: m.MapPage })));
+const ReplayPage = lazy(() => import("./pages/ReplayPage").then((m) => ({ default: m.ReplayPage })));
+const TonightPage = lazy(() => import("./pages/TonightPage").then((m) => ({ default: m.TonightPage })));
 
 const ROUTES = ["map", "tonight", "replay", "accuracy", "alerts", "about"] as const;
 type Route = (typeof ROUTES)[number];
@@ -80,12 +82,14 @@ export default function App() {
         <a href={official.sdapcd_alerts_signup} target="_blank" rel="noreferrer">{t.official_signup} ↗</a>
       </div>
       <main>
+        <Suspense fallback={null}>
         {route === "map" && <MapPage t={t} lang={lang} now={now} />}
         {route === "tonight" && <TonightPage t={t} lang={lang} />}
         {route === "replay" && <ReplayPage t={t} lang={lang} />}
         {route === "accuracy" && <AccuracyPage t={t} lang={lang} />}
         {route === "alerts" && <AlertsPage t={t} lang={lang} official={official} />}
         {route === "about" && <AboutPage t={t} lang={lang} official={official} />}
+        </Suspense>
       </main>
       <footer className="foot">
         <span>{t.credits_data}</span>
