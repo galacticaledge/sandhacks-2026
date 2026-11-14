@@ -5,7 +5,8 @@ import { Icon } from "../components/Icons";
 import { Legend } from "../components/Legend";
 import { LevelBadge } from "../components/LevelBadge";
 import { PointChart } from "../components/PointChart";
-import { LEVELS, fmtPpb, fmtTime, levelOf } from "../levels";
+import { Spark } from "../components/Spark";
+import { LEVELS, fmtPpb, fmtTime, levelOf, levelStyle } from "../levels";
 import type { Lang, Strings } from "../i18n";
 
 type Tonight = { run_id: string; run_kind: string; issued_at: string; items: TonightItem[] };
@@ -82,10 +83,53 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
   const pItem = picked?.id ? tonight?.items.find((x) => x.id === picked.id) : undefined;
   const peak50 = picked ? Math.max(...picked.s.p50) : null;
   const peak90 = picked ? Math.max(...picked.s.p90) : null;
+  // highest median across all places, per hour: drives the summary strip
+  const regionMax = useMemo(() => {
+    if (!meta) return [] as number[];
+    const ss = Object.values(meta.series);
+    return meta.valid_times.map((_, h) => Math.max(0, ...ss.map((x) => x.p50[h] ?? 0)));
+  }, [meta]);
+  const stripTop = Math.max(5, ...regionMax);
+  const worst = tonight?.items[0];
+  const lvlName = (l?: Level | null) => (l ? (t[`level_${l}` as keyof Strings] as string) : "–");
   const pills: [Kind, string][] = [["all", t.all_areas], ["neighborhood", t.neighborhoods], ["school", t.schools], ["monitor", t.monitors_f]];
 
   return (
     <div className="fc">
+      {worst && (
+        <section className="hero card-xl" aria-label={t.tonight_title}>
+          <div className="hero-text">
+            <span className="eyebrow">{t.tonight_title}</span>
+            <h1>
+              {t.hero_expect} <span className={`hero-level lvl-${worst.level ?? "green"}`}>{lvlName(worst.level)}</span>
+            </h1>
+            <p className="muted">
+              {t.hero_highest} <strong className="ink">{worst.name}</strong>: {fmtPpb(worst.peak_p50)} ppb
+              {worst.peak_time ? <> · {fmtTime(worst.peak_time, lang, true)}</> : null}
+              {" "}· {t.peak_high}: {fmtPpb(worst.peak_p90)} ppb
+            </p>
+          </div>
+          {meta && (
+            <div className="strip" role="group" aria-label={t.hour}>
+              <div className="strip-bars">
+                {regionMax.map((v, h) => {
+                  const l = levelStyle(levelOf(v));
+                  return (
+                    <button key={h} className={`bar${h === hour ? " on" : ""}`} onClick={() => setHour(h)}
+                      title={`${fmtTime(meta.valid_times[h], lang, true)}: ${fmtPpb(v)} ppb`} aria-label={`${fmtTime(meta.valid_times[h], lang, true)}: ${fmtPpb(v)} ppb`}>
+                      <span style={{ height: `${18 + 82 * Math.min(1, v / stripTop)}%`, background: l?.color }} />
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="strip-axis">
+                {meta.valid_times.map((v, h) => <span key={h}>{h % 6 === 0 ? fmtTime(v, lang) : ""}</span>)}
+              </div>
+              <small className="muted">{t.strip_note}</small>
+            </div>
+          )}
+        </section>
+      )}
       <form className="fc-search" onSubmit={search} role="search">
         <label className="fc-input">
           <Icon name="search" size={20} />
@@ -176,7 +220,8 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
                 <button className={picked?.id === r.id ? "on" : ""} onClick={() => selectPlace(r.id)}>
                   <span className="rank-name">{r.name}<small>{r.kind === "school" ? t.school : r.kind === "monitor" ? t.monitor : t.neighborhood}</small></span>
                   <LevelBadge level={r.level} t={t} small />
-                  <span className="rank-val">{fmtPpb(r.peak_p50)} <small>ppb</small><small>P90 {fmtPpb(r.peak_p90)}</small></span>
+                  <Spark values={meta?.series[r.id]?.p50 ?? []} width={48} />
+                  <span className="rank-val"><span>{fmtPpb(r.peak_p50)} <small>ppb</small></span><small>P90 {fmtPpb(r.peak_p90)}</small></span>
                 </button>
               </li>
             ))}

@@ -31,6 +31,11 @@ The forecast level colors are **not** themed. They stay the SDAPCD green/yellow/
   - Detail card: peak median, P90, peak hour, confidence, 24 h chart with P10–P90 band, and the SDAPCD guidance.
   - "Tonight's highest forecasts" list with the level legend.
   - Click a place marker, a list row, any map point, or search an address to change the detail card.
+- **Forecast extras:**
+  - "Tonight" summary banner: expected peak level, highest place with median, high estimate and time.
+  - Clickable 24-hour strip of the highest median across all places, colored by SDAPCD level. Clicking a bar moves the map to that hour.
+  - A median sparkline next to each place in the ranking.
+- **Polish:** soft grape/stone background glow, frosted (blurred) pills and slider over the map, cards fade in and lift on hover, all disabled under `prefers-reduced-motion`.
 - **Live Map** (`#/live`, old `#/map` redirects here): the previous full map with monitor readings and model inputs.
 - **Tonight** full table (`#/tonight`): linked from the Forecast card. **About** (`#/about`): linked from Settings.
 - **Settings**: language, theme (Dark default per Figma / Light / System), official links.
