@@ -93,7 +93,8 @@ def send_evening_alerts(meta: dict, update: bool = False) -> int:
     names = {r["id"]: r["name"] for r in meta["receptors"]}
     sent_tonight: dict[str, list[dict]] = {}
     for a in store.alerts_sent_for(night):
-        sent_tonight.setdefault(a["subscription_id"], []).append(a)
+        if a.get("status") == "sent":  # a failed send is retried by the next run and does not use up the cap
+            sent_tonight.setdefault(a["subscription_id"], []).append(a)
     base = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000").rstrip("/")
     n = 0
     for sub in store.subscriptions():
@@ -115,6 +116,6 @@ def send_evening_alerts(meta: dict, update: bool = False) -> int:
             log.exception("alert to subscription %s failed", sub["id"])
             status = f"error {type(e).__name__}"
         store.record_alert(sub["id"], night, meta["run_id"], ev["kind"], status)
-        n += 1
+        n += status == "sent"
     log.info("alerts for run %s (update=%s): %d", meta["run_id"], update, n)
     return n
