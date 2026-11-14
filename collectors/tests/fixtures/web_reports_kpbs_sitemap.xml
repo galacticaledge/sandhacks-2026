@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+	<url>
+		<loc>https://www.kpbs.org/news/environment/2026/03/20/high-heat-broken-pump-lead-to-elevated-sewer-gas-smells-in-south-bay</loc>
+		<lastmod>2026-03-20</lastmod>
+	</url>
+	<url>
+		<loc>https://www.kpbs.org/place/personal-record-gallery</loc>
+		<lastmod>2026-10-05</lastmod>
+	</url>
+	<url>
+		<loc>https://www.kpbs.org/news/arts-culture/2026/03/06/a-black-owned-ranch-in-the-tijuana-river-valley-fosters-community-and-ancestral-connection</loc>
+		<lastmod>2026-03-13</lastmod>
+	</url>
+	<url>
+		<loc>https://www.kpbs.org/news/economy/2026/03/23/tallying-up-the-cost-of-senior-year-of-high-school</loc>
+		<lastmod>2026-03-25</lastmod>
+	</url>
+</urlset>
