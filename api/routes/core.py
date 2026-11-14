@@ -128,7 +128,8 @@ def spills():
 @router.get("/events")
 def events():
     return [{**e, **{k: _iso(e[k]) for k in ("published_at", "starts_at", "ends_at")},
-             "used_in_model": (e.get("confidence") or 0) >= 0.6} for e in store.flow_events()]
+             "used_in_model": (e.get("confidence") or 0) >= 0.6 and (
+                 e.get("expected_flow_mgd") is not None or e.get("flow_delta_mgd") is not None)} for e in store.flow_events()]
 
 
 class ManualEvent(BaseModel):
