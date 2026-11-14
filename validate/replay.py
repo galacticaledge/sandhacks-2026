@@ -100,10 +100,28 @@ def leave_one_monitor_out() -> dict:
     return out
 
 
-def spatial_check(run_ids: list[str]) -> dict:
-    """Do odor complaints land in the forecast high-concentration area more often than chance?"""
+def complaint_nights(days: int = 180, now: datetime | None = None) -> list[date]:
+    """Nights whose 5 PM forecast window (24 h) contains an odor complaint inside the grid, newest first.
+
+    A complaint received at t belongs to the run issued at the latest 5 PM <= t, so it falls inside that window.
+    """
+    now = now or datetime.now(UTC)
     g = make_grid()
-    pct, n = [], 0
+    nights = set()
+    for c in store.complaints(now - timedelta(days=days), now):
+        if g.index_of(c["lat"], c["lon"]) is not None:
+            nights.add((c["received_at"].astimezone(TZ) - timedelta(hours=17)).date())
+    return sorted(nights, reverse=True)
+
+
+def spatial_check(run_ids: list[str]) -> dict:
+    """Do odor complaints land in the forecast high-concentration area more often than chance?
+
+    Uses each complaint's percentile within the p50 field for its hour, so only the field's shape matters:
+    replays of nights without H2S readings (prior source strengths) still count.
+    """
+    g = make_grid()
+    pct, n, runs = [], 0, set()
     for rid in run_ids:
         d = FORECAST_DIR / rid
         if not (d / "p50.npy").exists():
@@ -119,12 +137,13 @@ def spatial_check(run_ids: list[str]) -> dict:
             if not 0 <= h < len(vt):
                 continue
             field = np.asarray(p50[h], dtype=float)
-            pct.append(float((field < field[ij]).mean())); n += 1
+            pct.append(float((field < field[ij]).mean())); n += 1; runs.add(rid)
     if not pct:
-        return {"n_complaints": 0}
+        return {"n_complaints": 0, "n_nights": 0}
     top20 = float(np.mean(np.array(pct) >= 0.8))
-    return {"n_complaints": n, "mean_percentile": float(np.mean(pct)), "share_in_top20pct_area": top20,
-            "chance_share": 0.2}
+    return {"n_complaints": n, "n_nights": len(runs), "mean_percentile": float(np.mean(pct)),
+            "share_in_top20pct_area": top20, "chance_share": 0.2,
+            "note": "complaint hour vs that hour's forecast field; replays use observed weather"}
 
 
 def score_all() -> dict:
@@ -175,13 +194,20 @@ def score_all() -> dict:
     return result
 
 
-def run_all_replays(grid_nights: int = 0, force: bool = False):
+def run_all_replays(grid_nights: int = 0, force: bool = False, complaint_grid_nights: int = 30):
+    """Replay every night with readings (grids for the last `grid_nights`), plus grid replays for the most recent
+    `complaint_grid_nights` nights with odor complaints so the complaint check has windows to test. Cached."""
     nights = available_nights()
     for i, night in enumerate(nights):
         try:
             replay_night(night, grid=i >= len(nights) - grid_nights, force=force)
         except Exception:
             log.exception("replay %s failed", night)
+    for night in complaint_nights()[:complaint_grid_nights]:
+        try:
+            replay_night(night, grid=True, force=force)
+        except Exception:
+            log.exception("complaint replay %s failed", night)
     return score_all()
 
 
