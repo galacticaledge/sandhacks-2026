@@ -38,7 +38,8 @@ def evaluate(valid_times: list[datetime], p10: list[float], p50: list[float], p9
     else:
         kind = "none"
     above = [i for i in w if (p50[i] if kind == "likely" else p90[i]) >= ORANGE_PPB]
-    conf = confidence_label(peak50, p90[i50])
+    # From the two peaks we display, even when they fall in different hours: a wide gap must not read as "high".
+    conf = confidence_label(peak50, peak90)
     if kind == "possible":
         conf = "low"
     return {
