@@ -1,0 +1,20 @@
+Subject: Smellcast: pronóstico $kind_label de gas de drenaje (H2S) esta noche para $place
+
+$kind_sentence
+
+Lugar: $place
+Horario esperado del pico: $window
+Nivel pronosticado: $level_label ($level_range)
+Pico pronosticado (mediana): $peak_p50 ppb, estimación alta (percentil 90): $peak_p90 ppb
+Confianza: $confidence
+
+Lo que el SDAPCD indica que se puede esperar en este nivel:
+$expect
+
+Recomendaciones del SDAPCD (citadas de sus Directrices Comunitarias sobre H2S):
+$actions
+
+PRONÓSTICO EXPERIMENTAL, NO ES UN AVISO OFICIAL. Lecturas y avisos oficiales: $official_url
+Suscríbase a las alertas oficiales del SDAPCD: $official_alerts_url
+
+Cancelar suscripción (un clic): $unsubscribe_url

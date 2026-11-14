@@ -1,0 +1,182 @@
+{
+ "computed_at": "2026-11-14T21:19:34.439780+00:00",
+ "nights": [
+  "2026-11-11",
+  "2026-11-12",
+  "2026-11-13"
+ ],
+ "history": {
+  "start": "2026-11-12T08:00:00+00:00",
+  "end": "2026-11-14T19:00:00+00:00",
+  "hours": 179
+ },
+ "label": "with observed weather (flatters real forecast skill)",
+ "summary": {
+  "model": {
+   "ib_civic": {
+    "n_nights": 2,
+    "n_orange_nights": 0,
+    "hit_rate": null,
+    "false_alarm_ratio": null,
+    "category_accuracy": 1.0,
+    "mae_log": 0.41145942771104105
+   },
+   "nestor_bes": {
+    "n_nights": 2,
+    "n_orange_nights": 0,
+    "hit_rate": null,
+    "false_alarm_ratio": null,
+    "category_accuracy": 0.5,
+    "mae_log": 0.48609556244805285
+   },
+   "san_ysidro": {
+    "n_nights": 2,
+    "n_orange_nights": 0,
+    "hit_rate": null,
+    "false_alarm_ratio": null,
+    "category_accuracy": 0.5,
+    "mae_log": 0.5569606124027755
+   },
+   "all": {
+    "n_nights": 6,
+    "n_orange_nights": 0,
+    "hit_rate": null,
+    "false_alarm_ratio": null,
+    "category_accuracy": 0.6666666666666666,
+    "mae_log": 0.48483853418728967
+   }
+  },
+  "persistence": {
+   "ib_civic": {
+    "n_nights": 2,
+    "n_orange_nights": 0,
+    "hit_rate": null,
+    "false_alarm_ratio": null,
+    "category_accuracy": 1.0,
+    "mae_log": 0.442901013355398
+   },
+   "nestor_bes": {
+    "n_nights": 2,
+    "n_orange_nights": 0,
+    "hit_rate": null,
+    "false_alarm_ratio": null,
+    "category_accuracy": 0.5,
+    "mae_log": 0.6295352021087548
+   },
+   "san_ysidro": {
+    "n_nights": 2,
+    "n_orange_nights": 0,
+    "hit_rate": null,
+    "false_alarm_ratio": null,
+    "category_accuracy": 0.5,
+    "mae_log": 0.6115850478139182
+   },
+   "all": {
+    "n_nights": 6,
+    "n_orange_nights": 0,
+    "hit_rate": null,
+    "false_alarm_ratio": null,
+    "category_accuracy": 0.6666666666666666,
+    "mae_log": 0.5613404210926903
+   }
+  },
+  "climatology": {
+   "ib_civic": {
+    "n_nights": 2,
+    "n_orange_nights": 0,
+    "hit_rate": null,
+    "false_alarm_ratio": null,
+    "category_accuracy": 1.0,
+    "mae_log": 0.47550035794314405
+   },
+   "nestor_bes": {
+    "n_nights": 2,
+    "n_orange_nights": 0,
+    "hit_rate": null,
+    "false_alarm_ratio": null,
+    "category_accuracy": 0.5,
+    "mae_log": 0.6871452103683335
+   },
+   "san_ysidro": {
+    "n_nights": 2,
+    "n_orange_nights": 0,
+    "hit_rate": null,
+    "false_alarm_ratio": null,
+    "category_accuracy": 0.5,
+    "mae_log": 0.6535266147311223
+   },
+   "all": {
+    "n_nights": 6,
+    "n_orange_nights": 0,
+    "hit_rate": null,
+    "false_alarm_ratio": null,
+    "category_accuracy": 0.6666666666666666,
+    "mae_log": 0.6053907276808667
+   }
+  }
+ },
+ "detail": [
+  {
+   "night": "2026-11-11",
+   "run_id": "20261112T0100Z-replay",
+   "obs_peak": {
+    "ib_civic": 2.7,
+    "nestor_bes": 4.3,
+    "san_ysidro": 5.4
+   },
+   "fc_peak": {
+    "ib_civic": 0.4699999988079071,
+    "nestor_bes": 0.46000000834465027,
+    "san_ysidro": 0.44999998807907104
+   }
+  },
+  {
+   "night": "2026-11-12",
+   "run_id": "20261113T0100Z-replay",
+   "obs_peak": {
+    "ib_civic": 2.7,
+    "nestor_bes": 3.3,
+    "san_ysidro": 7.8
+   },
+   "fc_peak": {
+    "ib_civic": 0.49000000953674316,
+    "nestor_bes": 0.6100000143051147,
+    "san_ysidro": 0.5199999809265137
+   }
+  },
+  {
+   "night": "2026-11-13",
+   "run_id": "20261114T0100Z-replay",
+   "obs_peak": {
+    "ib_civic": 4.9,
+    "nestor_bes": 6.1,
+    "san_ysidro": 1.8
+   },
+   "fc_peak": {
+    "ib_civic": 0.5899999737739563,
+    "nestor_bes": 0.5600000023841858,
+    "san_ysidro": 0.49000000953674316
+   }
+  }
+ ],
+ "leave_one_monitor_out": {
+  "ib_civic": {
+   "mae_log": 0.29212892950241004,
+   "r_log": 0.18501083304384344,
+   "n_hours": 60
+  },
+  "nestor_bes": {
+   "mae_log": 0.4447768886218424,
+   "r_log": -0.11156082033794773,
+   "n_hours": 59
+  },
+  "san_ysidro": {
+   "mae_log": 0.402112077087333,
+   "r_log": 0.03687987845583955,
+   "n_hours": 60
+  }
+ },
+ "spatial": {
+  "n_complaints": 0
+ }
+}

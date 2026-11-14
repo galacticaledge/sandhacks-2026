@@ -1,0 +1,39 @@
+import type { Level } from "./api";
+
+// SDAPCD Community H2S Guidance levels. Hues match the map overlay; each level also has a distinct shape icon.
+export const LEVELS: { key: Level; min: number; color: string; ink: string; icon: string }[] = [
+  { key: "green", min: 0, color: "#1a9850", ink: "#fff", icon: "●" },
+  { key: "yellow", min: 5, color: "#fee08b", ink: "#3b3000", icon: "▲" },
+  { key: "orange", min: 30, color: "#f46d43", ink: "#2b0d00", icon: "◆" },
+  { key: "review", min: 200, color: "#762a83", ink: "#fff", icon: "■" },
+];
+
+export function levelOf(ppb: number | null | undefined): Level | null {
+  if (ppb == null || Number.isNaN(ppb)) return null;
+  let l: Level = "green";
+  for (const x of LEVELS) if (ppb >= x.min) l = x.key;
+  return l;
+}
+
+export const levelStyle = (l: Level | null | undefined) => LEVELS.find((x) => x.key === l) ?? null;
+
+// Monitors can report small negative values (instrument noise around zero); display them as 0.
+export const fmtPpb = (v: number | null | undefined) => {
+  if (v == null || Number.isNaN(v)) return "–";
+  const x = Math.max(0, v);
+  return x < 10 ? x.toFixed(1) : Math.round(x).toString();
+};
+
+export function fmtTime(iso: string, lang: string, withDay = false) {
+  const d = new Date(iso);
+  const opts: Intl.DateTimeFormatOptions = { hour: "numeric", timeZone: "America/Los_Angeles" };
+  if (withDay) opts.weekday = "short";
+  return d.toLocaleString(lang === "es" ? "es-MX" : "en-US", opts);
+}
+
+export function fmtDateTime(iso: string | null | undefined, lang: string) {
+  if (!iso) return "–";
+  return new Date(iso).toLocaleString(lang === "es" ? "es-MX" : "en-US", {
+    month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles",
+  });
+}

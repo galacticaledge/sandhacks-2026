@@ -1,0 +1,17 @@
+numpy==2.4.6
+scipy
+fastapi
+uvicorn[standard]
+httpx
+apscheduler<4
+sqlalchemy>=2
+psycopg[binary]>=3.1
+pydantic>=2
+pyyaml
+pillow
+python-dotenv
+google-genai
+python-multipart
+playwright
+pypdf
+pytest

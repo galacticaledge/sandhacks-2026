@@ -1,0 +1,9 @@
+.venv
+web/node_modules
+web/dist
+data/raw
+data/forecasts
+data/*.sqlite
+logs
+.git
+.env

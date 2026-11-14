@@ -1,0 +1,19 @@
+{"type":"FeatureCollection","features":[
+{"type":"Feature","properties":{"id":"nb_nestor","kind":"neighborhood","name":"Nestor"},"geometry":{"type":"Point","coordinates":[-117.0842,32.5703]}},
+{"type":"Feature","properties":{"id":"nb_imperial_beach","kind":"neighborhood","name":"Imperial Beach"},"geometry":{"type":"Point","coordinates":[-117.1130,32.5795]}},
+{"type":"Feature","properties":{"id":"nb_ib_seacoast","kind":"neighborhood","name":"Imperial Beach (south, Seacoast)"},"geometry":{"type":"Point","coordinates":[-117.1317,32.5700]}},
+{"type":"Feature","properties":{"id":"nb_san_ysidro","kind":"neighborhood","name":"San Ysidro"},"geometry":{"type":"Point","coordinates":[-117.0431,32.5520]}},
+{"type":"Feature","properties":{"id":"nb_egger_highlands","kind":"neighborhood","name":"Egger Highlands"},"geometry":{"type":"Point","coordinates":[-117.0960,32.5802]}},
+{"type":"Feature","properties":{"id":"nb_palm_city","kind":"neighborhood","name":"Palm City"},"geometry":{"type":"Point","coordinates":[-117.0790,32.5847]}},
+{"type":"Feature","properties":{"id":"nb_otay_mesa_west","kind":"neighborhood","name":"Otay Mesa West"},"geometry":{"type":"Point","coordinates":[-117.0542,32.5731]}},
+{"type":"Feature","properties":{"id":"sc_berry","kind":"school","name":"Berry Elementary"},"geometry":{"type":"Point","coordinates":[-117.0905,32.5673]}},
+{"type":"Feature","properties":{"id":"sc_mendoza","kind":"school","name":"Mendoza Elementary"},"geometry":{"type":"Point","coordinates":[-117.0895,32.5786]}},
+{"type":"Feature","properties":{"id":"sc_southwest_hs","kind":"school","name":"Southwest High"},"geometry":{"type":"Point","coordinates":[-117.0813,32.5682]}},
+{"type":"Feature","properties":{"id":"sc_nicoloff","kind":"school","name":"Nicoloff Elementary"},"geometry":{"type":"Point","coordinates":[-117.0656,32.5669]}},
+{"type":"Feature","properties":{"id":"sc_central_ib","kind":"school","name":"Central Elementary (Imperial Beach)"},"geometry":{"type":"Point","coordinates":[-117.1067,32.5783]}},
+{"type":"Feature","properties":{"id":"sc_oneonta","kind":"school","name":"Oneonta Elementary"},"geometry":{"type":"Point","coordinates":[-117.1114,32.5729]}},
+{"type":"Feature","properties":{"id":"sc_mar_vista","kind":"school","name":"Mar Vista High"},"geometry":{"type":"Point","coordinates":[-117.1228,32.5781]}},
+{"type":"Feature","properties":{"id":"sc_smythe","kind":"school","name":"Smythe Elementary"},"geometry":{"type":"Point","coordinates":[-117.0502,32.5639]}},
+{"type":"Feature","properties":{"id":"sc_la_mirada","kind":"school","name":"La Mirada Elementary"},"geometry":{"type":"Point","coordinates":[-117.0461,32.5644]}},
+{"type":"Feature","properties":{"id":"sc_willow","kind":"school","name":"Willow Elementary"},"geometry":{"type":"Point","coordinates":[-117.0416,32.5488]}}
+]}

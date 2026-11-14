@@ -1,0 +1,20 @@
+Subject: Smellcast: $kind_label sewer-gas (H2S) forecast tonight for $place
+
+$kind_sentence
+
+Place: $place
+Expected peak window: $window
+Forecast level: $level_label ($level_range)
+Forecast peak (median): $peak_p50 ppb, high estimate (90th percentile): $peak_p90 ppb
+Confidence: $confidence
+
+What SDAPCD says to expect at this level:
+$expect
+
+SDAPCD recommendations (quoted from the Community H2S Guidance):
+$actions
+
+EXPERIMENTAL FORECAST, NOT AN OFFICIAL ADVISORY. Official readings and advisories: $official_url
+Sign up for official SDAPCD alerts: $official_alerts_url
+
+Unsubscribe (one click): $unsubscribe_url

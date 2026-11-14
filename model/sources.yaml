@@ -1,0 +1,26 @@
+# Point sources along the Tijuana River channel (spec section 5.1).
+# share = prior fraction of total release; calibration refits these.
+# Saturn Blvd: longitude from OSM (Saturn Blvd alignment at -117.0927, Nominatim 2026-11-14);
+# river-channel latitude estimated -- HUMAN: confirm on satellite imagery.
+t_ref_c: 15.0
+alpha: 1.0
+beta: 0.05
+log_k: -5.8          # ln(g/s per MGD); prior, refit by calibration
+initial_sigma_y_m: 15.0
+initial_sigma_z_m: 2.0
+sources:
+  - id: saturn_blvd
+    name: Saturn Blvd river crossing (main hotspot)
+    lat: 32.5530
+    lon: -117.0927
+    share: 0.7
+  - id: hollister_st
+    name: Hollister St crossing
+    lat: 32.5508
+    lon: -117.0840
+    share: 0.2
+  - id: dairy_mart
+    name: Dairy Mart Rd / near border
+    lat: 32.5468
+    lon: -117.0640
+    share: 0.1

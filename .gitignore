@@ -1,0 +1,16 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
+web/dist/
+data/raw/
+data/forecasts/*
+!data/forecasts/.gitkeep
+data/*.sqlite
+logs/
+.DS_Store
+.omc/
+data/calibration.json
+data/skill.json

@@ -1,0 +1,28 @@
+# Vultr VM: `docker compose up -d --build`. Data, raw cache and logs persist in ./data and ./logs.
+services:
+  smellcast:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - MODEL_WORKERS=${MODEL_WORKERS:-4}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+  caddy:  # HTTPS for the domain (set DOMAIN in .env, e.g. smellcast.us)
+    image: caddy:2.8
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    command: caddy reverse-proxy --from ${DOMAIN:-localhost} --to smellcast:8000
+    volumes:
+      - caddy_data:/data
+    depends_on: [smellcast]
+volumes:
+  caddy_data:
