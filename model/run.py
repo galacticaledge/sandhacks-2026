@@ -33,6 +33,7 @@ UTC = timezone.utc
 SPINUP_H = 4
 FILTER_H = 240   # the filter forgets within a few days; ten covers it
 LEAD_H = 24
+MAX_PPB = 2000.0
 
 
 def receptors() -> list[dict]:
@@ -158,6 +159,8 @@ def run_forecast(issued: datetime | None = None, scenario: str = "live", weather
         p10, p50, p90 = blend.hourly_quantiles(physics, corr["night"], mult)
     else:   # no correction fitted: raw ensemble percentiles
         p10, p50, p90 = res.p10[sl], physics, res.p90[sl]
+    # a point source is not valid within ~100 m of the river: cap the map there (highest reading on record: 915 ppb)
+    p10, p50, p90 = (np.minimum(a, MAX_PPB) for a in (p10, p50, p90))
 
     out_dir = FORECAST_DIR / run_id
     if out_dir.exists():
