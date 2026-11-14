@@ -1,28 +1,74 @@
-# Vultr VM: `docker compose up -d --build`. Data, raw cache and logs persist in ./data and ./logs.
+# Local stack: `docker compose up -d --build` -> app on http://localhost:8000, inbox on http://localhost:8025.
+# Everything runs here: TimescaleDB (the same engine as Tiger Data) and Mailpit (catches alert emails).
+# Production (Vultr): set DATABASE_URL (Tiger Cloud), RESEND_API_KEY and DOMAIN in .env, then
+#   `docker compose --profile https up -d --build`
 services:
   smellcast:
     build: .
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
     environment:
-      - MODEL_WORKERS=${MODEL_WORKERS:-4}
+      # Empty DATABASE_URL in .env -> the local TimescaleDB container below.
+      DATABASE_URL: ${DATABASE_URL:-postgresql://smellcast:smellcast@timescaledb:5432/smellcast}
+      # Used when RESEND_API_KEY is empty: alert emails go to Mailpit instead of the internet.
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      ALERT_FROM_EMAIL: ${ALERT_FROM_EMAIL:-alerts@smellcast.local}
+      MODEL_WORKERS: ${MODEL_WORKERS:-4}
     ports:
       - "8000:8000"
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
       interval: 60s
       timeout: 10s
       retries: 3
-  caddy:  # HTTPS for the domain (set DOMAIN in .env, e.g. smellcast.us)
+      start_period: 30s
+
+  timescaledb:  # local stand-in for Tiger Data
+    image: timescale/timescaledb:2.17.2-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: smellcast
+      POSTGRES_PASSWORD: smellcast
+      POSTGRES_DB: smellcast
+      TZ: UTC
+    ports:
+      - "127.0.0.1:5432:5432"  # host access for `python -m ...` scripts and psql
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smellcast -d smellcast"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mailpit:  # local SMTP sink + web inbox for alert emails
+    image: axllent/mailpit:v1.21.8
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"  # web UI
+      - "127.0.0.1:1025:1025"  # SMTP
+
+  caddy:  # HTTPS for the domain (set DOMAIN in .env, e.g. smellcast.us); production only
     image: caddy:2.8
+    profiles: ["https"]
     restart: unless-stopped
     ports: ["80:80", "443:443"]
     command: caddy reverse-proxy --from ${DOMAIN:-localhost} --to smellcast:8000
     volumes:
       - caddy_data:/data
     depends_on: [smellcast]
+
 volumes:
+  timescale_data:
   caddy_data:

@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import logging
 import os
+import smtplib
 from datetime import datetime, timedelta, timezone
+from email.message import EmailMessage
 from pathlib import Path
 from string import Template
 
@@ -52,13 +54,25 @@ def render(lang: str, place: str, ev: dict, unsubscribe_url: str) -> tuple[str, 
 
 
 def send_email(to: str, subject: str, body: str) -> str:
-    key, sender = os.getenv("RESEND_API_KEY"), os.getenv("ALERT_FROM_EMAIL")
-    if not key or not sender:
+    """Resend when RESEND_API_KEY is set; otherwise SMTP (Mailpit in docker compose) when SMTP_HOST is set."""
+    key, sender, smtp_host = os.getenv("RESEND_API_KEY"), os.getenv("ALERT_FROM_EMAIL"), os.getenv("SMTP_HOST")
+    if not sender or not (key or smtp_host):
         log.warning("email not configured; would send to %s: %s", to[:3] + "***", subject)
         return "not_configured"
-    r = httpx.post("https://api.resend.com/emails", headers={"Authorization": f"Bearer {key}"},
-                   json={"from": sender, "to": [to], "subject": subject, "text": body}, timeout=30)
-    return "sent" if r.status_code < 300 else f"error {r.status_code}"
+    if key:
+        r = httpx.post("https://api.resend.com/emails", headers={"Authorization": f"Bearer {key}"},
+                       json={"from": sender, "to": [to], "subject": subject, "text": body}, timeout=30)
+        return "sent" if r.status_code < 300 else f"error {r.status_code}"
+    msg = EmailMessage()
+    msg["From"], msg["To"], msg["Subject"] = sender, to, subject
+    msg.set_content(body)
+    try:
+        with smtplib.SMTP(smtp_host, int(os.getenv("SMTP_PORT", "1025")), timeout=30) as s:
+            s.send_message(msg)
+    except (OSError, smtplib.SMTPException) as e:
+        log.error("smtp send failed: %s", e)
+        return "error smtp"
+    return "sent"
 
 
 def send_for_hour(hour: int, update: bool = False) -> int:

@@ -5,7 +5,21 @@ with evening-before alerts in English and Spanish. **Not an official advisory**;
 
 Spec: [`SPEC.md`](SPEC.md). Status: [`docs/data_status.md`](docs/data_status.md), [`docs/integrations.md`](docs/integrations.md).
 
-## Run locally
+## Run locally (Docker, everything local)
+
+```bash
+cp .env.example .env                      # leave DATABASE_URL / RESEND_API_KEY empty
+docker compose up -d --build
+```
+
+- App: http://localhost:8000
+- TimescaleDB (local Tiger Data): `postgresql://smellcast:smellcast@localhost:5432/smellcast`
+- Mailpit inbox for alert emails: http://localhost:8025
+
+Run one-off jobs inside the stack, e.g. `docker compose exec smellcast python -m model.run`.
+Bright Data and Gemini are hosted APIs with no local equivalent; without keys those collectors are skipped.
+
+## Run locally (bare Python)
 
 ```bash
 uv venv --python 3.11 .venv && uv pip install --python .venv -r requirements.txt
@@ -23,7 +37,8 @@ Demo fallback: `python -m scripts.make_demo` freezes a snapshot; `DEMO_MODE=1` s
 
 ## Deploy (Vultr)
 
-`docker compose up -d --build` with `.env` filled in (`DATABASE_URL` = Tiger Data, `DOMAIN` for HTTPS).
+`docker compose --profile https up -d --build` with `.env` filled in (`DATABASE_URL` = Tiger Data,
+`RESEND_API_KEY`, `DOMAIN` for HTTPS). The local TimescaleDB and Mailpit containers still start but go unused.
 Logs: `logs/smellcast.log`. All jobs are idempotent and logged.
 
 ## Layout
