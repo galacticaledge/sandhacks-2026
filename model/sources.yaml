@@ -1,7 +1,8 @@
 # Point sources along the Tijuana River channel (spec section 5.1).
 # share = prior fraction of total release; calibration refits these.
 # Saturn Blvd: longitude from OSM (Saturn Blvd alignment at -117.0927, Nominatim 2026-11-14);
-# river-channel latitude estimated -- HUMAN: confirm on satellite imagery.
+# river-channel latitude checked against OSM 2026-11-14: the Tijuana River way crosses lon -117.0927 at
+# lat 32.55285 (17 m from the value below). OSM centerline only -- HUMAN: confirm the turbulent spot on satellite imagery.
 t_ref_c: 15.0
 alpha: 1.0
 beta: 0.05
