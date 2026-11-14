@@ -51,3 +51,13 @@ def test_usibwc_flow_daily_mean_and_units():
         assert rows[0]["mgd"] == round(1.0 * 22.8245, 2)
         assert rows[1]["mgd"] == round(3.0 * 22.8245, 2)  # blank value skipped, mean of 2.0 and 4.0
     assert usibwc_flow.unit_factor("Value (ft^3/s)") == 0.64632
+
+
+def test_weather_placeholder_temperature_is_treated_as_missing():
+    from collectors import weather_archive
+    csv_text = ("station,valid,sknt,drct,tmpc,skyc1,skyc2,skyc3\n"
+                "NRS,2024-01-10 05:53,3,90,12.0,CLR,M,M\n"
+                "NRS,2024-01-10 06:53,M,M,-16.67,CLR,M,M\n"
+                "NRS,2024-01-10 07:53,4,80,10.0,CLR,M,M\n")
+    rows = weather_archive.parse_hourly(csv_text.encode())
+    assert [round(r["temp_c"], 1) for r in rows] == [12.0, 11.0, 10.0]

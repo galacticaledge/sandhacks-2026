@@ -33,7 +33,10 @@ def parse_hourly(payload: bytes, station: str = PAST_WX_STATION) -> list[dict]:
             return None if v in ("M", "", None) else float(v)
         sky = [SKY.get(r.get(k, ""), None) for k in ("skyc1", "skyc2", "skyc3")]
         sky = [s for s in sky if s is not None]
-        rec = {"sknt": num("sknt"), "drct": num("drct"), "tmpc": num("tmpc"), "sky": max(sky) if sky else None}
+        tmpc = num("tmpc")
+        if tmpc is not None and tmpc < -5:  # KNRS logs a -16.67 C (2 F) placeholder; it never freezes here
+            tmpc = None
+        rec = {"sknt": num("sknt"), "drct": num("drct"), "tmpc": tmpc, "sky": max(sky) if sky else None}
         prev = hours.get(h)
         if prev is None or t.minute >= 50:  # prefer the routine :53 METAR
             hours[h] = rec
