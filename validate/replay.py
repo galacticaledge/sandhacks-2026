@@ -33,7 +33,8 @@ UTC = timezone.utc
 SKILL_PATH = (DEMO_DIR if DEMO_MODE else DATA_DIR) / "skill.json"
 REPLAY_MEMBERS = ensemble.N_MEMBERS   # same ensemble as the live run
 # spike nights the demo shows on the map (evening dates)
-GRID_NIGHTS = [date(2026, 3, 29), date(2026, 4, 19), date(2026, 4, 4), date(2025, 2, 23)]
+GRID_NIGHTS = [date(2026, 3, 29), date(2026, 4, 19), date(2026, 4, 4), date(2025, 2, 23),
+               date(2026, 2, 14), date(2026, 3, 13)]   # the last two: orange after a quiet night, forecast as likely
 
 
 def issue_time(night: date) -> datetime:
