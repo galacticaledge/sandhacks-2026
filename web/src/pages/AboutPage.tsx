@@ -22,6 +22,7 @@ export function AboutPage({ t, lang, official }: { t: Strings; lang: Lang; offic
         <li>{t.ab_src2a} <em>Science</em> {t.ab_src2b}</li>
         <li>{t.ab_src3}</li>
         <li>{t.ab_src4}</li>
+        <li>{t.ab_src7}</li>
         <li>{t.ab_src5a} <a href={g1} target="_blank" rel="noreferrer">{t.ab_guidance}</a> (<a href={g2} target="_blank" rel="noreferrer">{t.ab_other_lang}</a>).</li>
         <li>{t.ab_src6}</li>
       </ul>

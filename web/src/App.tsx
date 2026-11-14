@@ -7,11 +7,12 @@ import { STRINGS, type Lang } from "./i18n";
 const AboutPage = lazy(() => import("./pages/AboutPage").then((m) => ({ default: m.AboutPage })));
 const AccuracyPage = lazy(() => import("./pages/AccuracyPage").then((m) => ({ default: m.AccuracyPage })));
 const AlertsPage = lazy(() => import("./pages/AlertsPage").then((m) => ({ default: m.AlertsPage })));
+const EvidencePage = lazy(() => import("./pages/EvidencePage").then((m) => ({ default: m.EvidencePage })));
 const MapPage = lazy(() => import("./pages/MapPage").then((m) => ({ default: m.MapPage })));
 const ReplayPage = lazy(() => import("./pages/ReplayPage").then((m) => ({ default: m.ReplayPage })));
 const TonightPage = lazy(() => import("./pages/TonightPage").then((m) => ({ default: m.TonightPage })));
 
-const ROUTES = ["map", "tonight", "replay", "accuracy", "alerts", "about"] as const;
+const ROUTES = ["map", "tonight", "replay", "accuracy", "evidence", "alerts", "about"] as const;
 type Route = (typeof ROUTES)[number];
 const routeFromHash = (): Route => {
   const r = window.location.hash.replace(/^#\/?/, "") as Route;
@@ -89,6 +90,7 @@ export default function App() {
         {route === "tonight" && <TonightPage t={t} lang={lang} />}
         {route === "replay" && <ReplayPage t={t} lang={lang} />}
         {route === "accuracy" && <AccuracyPage t={t} lang={lang} />}
+        {route === "evidence" && <EvidencePage t={t} lang={lang} />}
         {route === "alerts" && <AlertsPage t={t} lang={lang} official={official} />}
         {route === "about" && <AboutPage t={t} lang={lang} official={official} />}
         </Suspense>
