@@ -66,3 +66,28 @@ def test_scales_reproduce_the_quantiles_and_spread_smoothly():
 
 def test_night_window_matches_alerts():
     assert [h for h in range(24) if blend.is_night_hour(h)] == list(range(9)) + list(range(18, 24))
+
+
+def test_hourly_quantiles_hit_the_night_peak_and_stay_ordered():
+    rng = np.random.default_rng(2)
+    physics = rng.uniform(1, 20, (24, 5)).astype(np.float32)
+    night = np.array([blend.is_night_hour((17 + i) % 24) for i in range(24)])
+    scale = np.array([[0.5, 2.0, 6.0], [0.2, 0.6, 1.5], [1.2, 3.0, 9.0], [0.5, 1.0, 2.0], [0.1, 0.4, 0.8]])
+    mult = blend.multipliers(scale, {"night_p10": [0.3] * 5, "day_p10": [0.5] * 5, "day_p90": [2.0] * 5})
+    p10, p50, p90 = blend.hourly_quantiles(physics, night, mult)
+    peak = physics[night].max(axis=0)
+    np.testing.assert_allclose(p50[night].max(axis=0), np.maximum(peak * scale[:, 1], p50[night].max(axis=0)), rtol=1e-5)
+    np.testing.assert_allclose(p50[night][physics[night].argmax(axis=0), np.arange(5)], peak * scale[:, 1], rtol=1e-5)
+    np.testing.assert_allclose(p90[night].max(axis=0)[:3], (peak * scale[:, 2])[:3], rtol=1e-5)
+    assert np.all(p10 <= p50 + 1e-6) and np.all(p50 <= p90 + 1e-6)
+    np.testing.assert_allclose(p50[~night], physics[~night])            # daytime: physics only
+    # only three night hours per point differ from physics in the P50 curve
+    assert np.all((np.abs(p50[night] / physics[night] - 1) > 1e-6).sum(axis=0) <= 3)
+
+
+def test_hourly_ratios_use_past_readings():
+    rng = np.random.default_rng(4)
+    phys = np.full(20000, 2.0); obs = phys * rng.uniform(0, 4, 20000)
+    r = blend.hourly_ratios([obs], [phys], [obs], [phys])
+    assert r["night_p10"][0] == pytest.approx(0.4, abs=0.1) and r["day_p90"][0] == pytest.approx(3.6, abs=0.15)
+    assert blend.hourly_ratios([obs[:10]], [phys[:10]], [obs[:10]], [phys[:10]])["night_p10"] == [0.3]   # too few: default

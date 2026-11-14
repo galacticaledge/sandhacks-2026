@@ -175,16 +175,31 @@ def run(hist: History, src: SourceConfig, bg: np.ndarray, blend: dict | None = N
         blend = blend_mod.fit(X, obs_peak, use, [m.site_id for m in MONITORS])
         blend["base"] = base.tolist()
         blend["fit_before"] = fit_blend_before.isoformat()
+        # hourly (reading / physics) ratios for the P10 curve and the daytime band, same fitting nights
+        fit_n = np.array([d < fit_blend_before for d in hist.nights])
+        cut = datetime(fit_blend_before.year, fit_blend_before.month, fit_blend_before.day, tzinfo=TZ)
+        local_hour = np.array([t.astimezone(TZ).hour for t in hist.times])
+        day = np.array([t < cut for t in hist.times]) & ~np.array([blend_mod.is_night_hour(h) for h in local_hour])
+        day[:6] = False
+        phys_day = np.exp(src.log_k) * factor[:, None] * units[0] + bg[None, :]   # base k: daytime signal is tiny
+        blend["hourly_ratio"] = blend_mod.hourly_ratios(
+            [obs[ni[fit_n], j].ravel() for j in range(M)], [physics[fit_n][:, :, j].ravel() for j in range(M)],
+            [obs[day, j] for j in range(M)], [phys_day[day, j] for j in range(M)])
+        if mask_monitor is not None:   # never measured there: take the other monitors' mean
+            for v in blend["hourly_ratio"].values():
+                v[mask_monitor] = float(np.mean([x for j, x in enumerate(v) if j != mask_monitor]))
     if blend is not None:
         q = blend_mod.predict(blend, X)                                    # [N, M, 3]
-        sc = np.stack([blend_mod.scales(q[k], physics[k].max(axis=0)) for k in range(N)])
-        if mask_monitor is not None:   # held-out monitor: correction interpolated from the others
-            for k in range(N):
-                sc[k, mask_monitor] = blend_mod.spread_scales(sc[k], hist.mx, hist.my, hist.mx[[mask_monitor]],
-                                                              hist.my[[mask_monitor]], use=others)[0]
-            q = sc * physics.max(axis=1)[:, :, None]
+        out.p = np.empty((3, N, NIGHT_H, M), dtype=np.float32)
+        night = np.ones(NIGHT_H, bool)
+        for k in range(N):
+            mult = blend_mod.multipliers(blend_mod.scales(q[k], physics[k].max(axis=0)), blend.get("hourly_ratio"))
+            if mask_monitor is not None:   # held-out monitor: correction interpolated from the others
+                mult[mask_monitor] = blend_mod.spread_scales(mult, hist.mx, hist.my, hist.mx[[mask_monitor]],
+                                                             hist.my[[mask_monitor]], use=others)[0]
+                q[k, mask_monitor] = mult[mask_monitor, :3] * physics[k, :, mask_monitor].max()
+            out.p[:, k] = blend_mod.hourly_quantiles(physics[k], night, mult)
         out.quantiles, out.blend = q, blend
-        out.p = np.stack([physics * sc[:, None, :, i] for i in range(3)])
     return out
 
 

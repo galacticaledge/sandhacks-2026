@@ -10,8 +10,15 @@ at each monitor. It is one linear regression on log(1 + night peak ppb), fitted 
 
 P10 / P50 / P90 of the night peak are that prediction plus the 10th / 50th / 90th percentile of the
 regression's own past errors at that monitor (no bell-curve assumption, so heavy tails are kept).
-The hourly physics curve is then scaled so its night maximum equals each quantile, and the scale is
-spread over the street grid by inverse-distance weighting, so the map agrees with the monitors.
+
+Hourly curves (hourly_quantiles): the physics curve is the hour-by-hour middle estimate. A night's peak
+is a spike of a few hours, far above the typical hour, so
+  P50: the three highest physics hours of the night are lifted toward the P50 night peak (fully at the
+       top hour, then 2/3 and 1/3); every other hour keeps the physics value;
+  P90: every night hour is scaled so the night maximum equals the P90 night peak;
+  P10: physics times the 10th percentile of past (reading / physics) ratios.
+Daytime hours use past daytime ratios only. All multipliers are spread over the street grid by
+inverse-distance weighting, so the map agrees with the monitors.
 No LLM, no future data: every input is known at issue time.
 """
 from __future__ import annotations
@@ -24,6 +31,8 @@ TODAY_H = 8                          # hours before issue for the "today" featur
 WEEK_N = 7
 TODAY_FILL = 0.5
 FEATURES = ["physics", "last_night", "week", "today"]
+SPIKE_WEIGHTS = (1.0, 2 / 3, 1 / 3)   # share of the P50 correction given to the 1st, 2nd, 3rd highest hour
+MULT_COLS = ("p10", "p50", "p90", "night_p10", "day_p10", "day_p90")
 
 
 def is_night_hour(local_hour: int) -> bool:
@@ -99,13 +108,52 @@ def scales(quantiles: np.ndarray, physics_peak: np.ndarray) -> np.ndarray:
 
 
 def spread_scales(scale: np.ndarray, mx, my, x, y, use: np.ndarray | None = None) -> np.ndarray:
-    """Inverse-distance-squared weighting of log scale from monitors to points. Returns [N, 3].
-    A point on a monitor gets that monitor's scale."""
+    """Inverse-distance-squared weighting of log multipliers from monitors to points. Returns [N, K]
+    for scale [M, K]. A point on a monitor gets that monitor's values."""
     mx = np.asarray(mx, dtype=float); my = np.asarray(my, dtype=float)
-    s = np.log(np.maximum(np.asarray(scale, dtype=float), 1e-6))
+    s = np.log(np.maximum(np.asarray(scale, dtype=float), 1e-3))
     if use is not None:
         mx, my, s = mx[use], my[use], s[use]
     d2 = (np.asarray(x, dtype=float)[:, None] - mx[None, :]) ** 2 + (np.asarray(y, dtype=float)[:, None] - my[None, :]) ** 2
     w = 1.0 / np.maximum(d2, 1.0)
     w /= w.sum(axis=1, keepdims=True)
     return np.exp(w @ s)
+
+
+def hourly_ratios(obs_night, phys_night, obs_day, phys_day) -> dict:
+    """Past (reading / physics) ratio percentiles per monitor. Inputs are lists of 1-D arrays, one per monitor."""
+    def q(o, p, pct, default):
+        ok = np.isfinite(o) & np.isfinite(p) & (p > 0)
+        return float(np.percentile(o[ok] / p[ok], pct)) if ok.sum() >= 50 else default
+    return {"night_p10": [q(o, p, 10, 0.3) for o, p in zip(obs_night, phys_night)],
+            "day_p10": [q(o, p, 10, 0.3) for o, p in zip(obs_day, phys_day)],
+            "day_p90": [max(q(o, p, 90, 2.0), 1.0) for o, p in zip(obs_day, phys_day)]}
+
+
+def multipliers(scale: np.ndarray, ratios: dict | None) -> np.ndarray:
+    """[M, 6] per-monitor multipliers in MULT_COLS order: night-peak scales, then hourly ratios."""
+    M = len(scale)
+    r = ratios or {"night_p10": [0.3] * M, "day_p10": [0.3] * M, "day_p90": [2.0] * M}
+    return np.concatenate([np.asarray(scale, dtype=float),
+                           np.array([r["night_p10"], r["day_p10"], r["day_p90"]], dtype=float).T], axis=1)
+
+
+def hourly_quantiles(physics: np.ndarray, night: np.ndarray, mult: np.ndarray):
+    """physics [H, N] ppb, night [H] bool, mult [N, 6] (MULT_COLS). Returns p10, p50, p90 [H, N].
+    The night maximum of p50 / p90 equals physics night peak * mult p50 / p90 (the night-peak quantiles)."""
+    physics = np.asarray(physics, dtype=np.float32)
+    night = np.asarray(night, bool)
+    mult = np.asarray(mult, dtype=np.float32)
+    w = np.zeros(physics.shape, dtype=np.float32)
+    if night.any():
+        pn = physics[night]
+        rank = np.argsort(np.argsort(-pn, axis=0, kind="stable"), axis=0, kind="stable")   # 0 = highest hour
+        wn = np.zeros(pn.shape, dtype=np.float32)
+        for r, v in enumerate(SPIKE_WEIGHTS):
+            wn[rank == r] = v
+        w[night] = wn
+    p50 = physics * mult[None, :, 1] ** w
+    nt = night[:, None]
+    p90 = np.where(nt, np.maximum(physics * mult[None, :, 2], p50), physics * mult[None, :, 5])
+    p10 = np.where(nt, np.minimum(physics * mult[None, :, 3], p50), physics * mult[None, :, 4])
+    return p10, p50, np.maximum(p90, p50)

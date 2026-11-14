@@ -102,6 +102,8 @@ def correct(issued: datetime, valid: list[datetime], physics_mon: np.ndarray, ca
     X = blend.design(peak, feats)
     q = blend.predict(cal_blend, X)
     return {"quantiles": q, "scale": blend.scales(q, peak), "physics_peak": peak, "features": feats,
+            "night": np.array([i in night for i in range(len(valid))]),
+            "mult": blend.multipliers(blend.scales(q, peak), cal_blend.get("hourly_ratio")),
             "contributions": blend.contributions(cal_blend, X)}
 
 
@@ -149,11 +151,11 @@ def run_forecast(issued: datetime | None = None, scenario: str = "live", weather
     physics = res.p50[sl]
     corr = correct(issued, valid, physics[:, -nm:], cal["blend"]) if cal and cal.get("blend") else None
     if corr is not None:
-        # same scale at every hour; between monitors it is interpolated, so the map matches the monitor forecasts
+        # multipliers are interpolated between monitors, so the map matches the monitor forecasts
         mx, my = monitor_xy()
-        sc = blend.spread_scales(corr["scale"], mx, my, ax, ay).astype(np.float32)
-        sc[-nm:] = corr["scale"]
-        p10, p50, p90 = (physics * sc[None, :, i] for i in range(3))
+        mult = blend.spread_scales(corr["mult"], mx, my, ax, ay)
+        mult[-nm:] = corr["mult"]
+        p10, p50, p90 = blend.hourly_quantiles(physics, corr["night"], mult)
     else:   # no correction fitted: raw ensemble percentiles
         p10, p50, p90 = res.p10[sl], physics, res.p90[sl]
 
