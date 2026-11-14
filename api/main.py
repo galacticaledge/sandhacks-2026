@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from api.routes import core, subscribe, validation
+from api.routes import core, reports, subscribe, validation
 from config import DEMO_MODE, LOG_DIR, ROOT
 from db.store import init_db
 
@@ -35,6 +35,7 @@ app = FastAPI(title="Smellcast API", lifespan=lifespan)
 app.include_router(core.router)
 app.include_router(validation.router)
 app.include_router(subscribe.router)
+app.include_router(reports.router)
 
 
 @app.get("/api/health")
