@@ -40,3 +40,13 @@ export function fmtDateTime(iso: string | null | undefined, lang: string) {
     month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles",
   });
 }
+
+export function fmtDate(iso: string | null | undefined, lang: string) {
+  if (!iso) return "–";
+  return new Date(iso).toLocaleDateString(lang === "es" ? "es-MX" : "en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Los_Angeles" });
+}
+
+// Clock time with minutes ("5:15 PM"), Pacific.
+export function fmtClock(iso: string, lang: string) {
+  return new Date(iso).toLocaleTimeString(lang === "es" ? "es-MX" : "en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" });
+}

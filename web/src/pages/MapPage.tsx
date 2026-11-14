@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { get, type Meta, type Now } from "../api";
 import { ForecastMap, type MapSource } from "../components/ForecastMap";
+import { InputsCard } from "../components/InputsCard";
 import { Legend } from "../components/Legend";
 import { LevelBadge } from "../components/LevelBadge";
 import { PointChart } from "../components/PointChart";
+import { TonightStrip } from "../components/TonightStrip";
 import { fmtPpb, fmtTime, levelOf } from "../levels";
 import type { Lang, Strings } from "../i18n";
 
@@ -64,9 +66,10 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
 
   const monitors = useMemo(() => (now?.monitors ?? []).map((m) => ({ ...m })), [now]);
   const vt = meta?.valid_times[hour];
-  const met = meta?.inputs.met;
 
   return (
+    <>
+    <TonightStrip t={t} lang={lang} />
     <div className="map-page">
       <section className="map-main" aria-label={t.nav_map}>
         <ForecastMap
@@ -127,19 +130,7 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
             ))}
           </ul>
         </div>
-        {meta && met && (
-          <div className="card inputs">
-            <h3>{t.inputs}</h3>
-            <dl>
-              <dt>{t.wind}</dt><dd>{(met.wind_ms[hour] ?? 0).toFixed(1)} {t.wind_from} {Math.round(met.wind_dir_deg[hour] ?? 0)}°</dd>
-              <dt>{t.stability}</dt><dd>{t.class_word} {met.stability[hour]} {"EF".includes(met.stability[hour]) ? t.stab_still : ""}</dd>
-              <dt>{t.temp}</dt><dd>{(met.temp_c[hour] ?? 0).toFixed(1)} °C</dd>
-              <dt>{t.river_flow}</dt><dd>{meta.inputs.flow_mgd[hour]} MGD <span className="muted">({meta.inputs.flow_source === "assumed default" ? t.flow_assumed : meta.inputs.flow_source.replace(/^gauge/, t.flow_gauge)})</span></dd>
-              <dt>{t.calibration}</dt><dd>log k {meta.inputs.log_k_now.toFixed(2)} ± {Math.sqrt(meta.inputs.log_k_var).toFixed(2)} <span className="muted">({meta.inputs.filter_obs_used} {t.monitor_hours})</span></dd>
-              <dt>{t.ensemble}</dt><dd>{meta.inputs.members} {t.members}</dd>
-            </dl>
-          </div>
-        )}
+        {meta && <InputsCard inputs={meta.inputs} hour={hour} t={t} />}
         <Legend t={t} />
         <ul className="key">
           <li><span className="src src-main inline">☣</span> {t.hotspot}</li>
@@ -148,5 +139,6 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
         </ul>
       </aside>
     </div>
+    </>
   );
 }

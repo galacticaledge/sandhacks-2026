@@ -133,3 +133,32 @@ tr.clickable:hover { background: var(--bg); }
   .map-main .slider-bar { position: static; margin: 8px; }
   .slider-col { min-width: 140px; }
 }
+
+.strip { display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--border); font-size: .92rem; }
+.strip-orange { background: var(--notice); border-left: 6px solid #f46d43; }
+.strip-q { font-size: 1.05rem; }
+.strip-body { flex: 1; min-width: 240px; }
+.strip-links { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.strip-links .btn { text-decoration: none; padding: 6px 12px; }
+.strip + .map-page { height: calc(100vh - 215px); min-height: 480px; }
+.compare { margin: 0 0 6px; min-height: 3.6em; }
+.chip-via { background: #e0ecf5; color: #1f3b4d; }
+.reports { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 12px; }
+.reports.compact { max-height: 260px; overflow-y: auto; }
+blockquote { margin: 0 0 4px; padding: 2px 0 2px 12px; border-left: 3px solid var(--border); }
+.email { border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); max-width: 760px; overflow: hidden; }
+.email-head { display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; flex-direction: row-reverse; padding: 12px 14px; background: var(--bg); border-bottom: 1px solid var(--border); }
+.email-head dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 0; font-size: .85rem; min-width: 0; }
+.email-head dt { color: var(--muted); }
+.email-head dd { margin: 0; overflow-wrap: anywhere; }
+.email-body { margin: 0; padding: 14px; white-space: pre-wrap; word-wrap: break-word; font: inherit; font-size: .9rem; line-height: 1.5; }
+.ev-list { list-style: none; padding: 0; margin: 12px 0; display: flex; flex-direction: column; gap: 12px; }
+.ev-head { display: flex; gap: 8px 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 6px; }
+.chip-used { background: #e8f5ec; color: #14532d; }
+.chip-shown { background: #eceff1; color: #455a64; }
+.ev-nums { display: flex; gap: 4px 16px; flex-wrap: wrap; font-size: .85rem; margin: 4px 0; }
+.acc-table td, .acc-table th { white-space: normal; }
+.acc-table td:first-child { font-weight: 700; }
+.acc-big { font-variant-numeric: tabular-nums; font-weight: 700; }
+details.more > summary { cursor: pointer; font-weight: 600; font-size: 1.05rem; margin: 20px 0 8px; }
+@media (max-width: 900px) { .strip + .map-page { height: auto; } }
