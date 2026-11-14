@@ -18,3 +18,12 @@ def test_render_en_includes_required_parts():
 def test_render_es_possible():
     subj, body = render("es", "San Ysidro", ev("possible"), "u")
     assert "POSIBLE NARANJA" in subj and "Mantenga cerradas puertas y ventanas" in body and "NO ES UN AVISO OFICIAL" in body
+
+
+def test_likely_at_200ppb_uses_review_guidance_but_possible_never_does():
+    from alerts.guidance import GUIDANCE
+    hi = {**ev("likely"), "peak_p50": 240.0, "level": "review", "level_p90": "review"}
+    assert GUIDANCE["en"]["review"]["expect"] in render("en", "Nestor", hi, "u")[1]
+    poss = {**ev("possible"), "peak_p50": 22.0, "peak_p90": 250.0, "level": "yellow", "level_p90": "review"}
+    body = render("en", "Nestor", poss, "u")[1]
+    assert GUIDANCE["en"]["orange"]["expect"] in body and GUIDANCE["en"]["review"]["expect"] not in body

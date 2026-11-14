@@ -39,8 +39,9 @@ def _fmt_time(iso: str, lang: str) -> str:
 
 def render(lang: str, place: str, ev: dict, unsubscribe_url: str) -> tuple[str, str]:
     w = WORDS[lang]
-    lvl = "orange" if ev["kind"] == "likely" else (ev.get("level_p90") or "orange")
-    lvl = lvl if lvl in ("orange", "review") else "orange"
+    # Likely: guidance for the median's level, so a 200+ ppb median gets the multi-agency text.
+    # Possible: always orange. A high estimate alone must not print "SDAPCD will activate review".
+    lvl = "review" if ev["kind"] == "likely" and ev.get("level") == "review" else "orange"
     g = GUIDANCE[lang][lvl]
     win = ev.get("orange_window") or ev["window"]
     text = Template((TPL / lang / "alert.txt").read_text()).substitute(
