@@ -71,7 +71,7 @@ export default function App() {
         <nav aria-label="Main">
           {NAV.map((r) => (
             <a key={r} href={`#/${r}`} className={active === r ? "active" : ""} aria-current={active === r ? "page" : undefined}>
-              <Icon name={r} size={26} />
+              <Icon name={r} size={36} />
               <span>{t[`nav_${r}` as keyof typeof t] as string}</span>
             </a>
           ))}

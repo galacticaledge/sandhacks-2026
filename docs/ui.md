@@ -32,6 +32,9 @@ The forecast level colors are **not** themed. They stay the SDAPCD green/yellow/
 
 ## Deviations from the frame
 
+- **Text on the search field and Search button is light, not Graphite.** The frame puts #2F2F2F text on a 30%-lavender field and a grape button, which is barely readable on a dark background (fails WCAG contrast). The field and button shapes, fills and borders match the frame.
+- A brand block (logo + tagline) sits at the top of the sidebar, where the frame has empty space. The disclaimer bar above the content is required on every page.
+
 - The frame's **"Cities"** pill became **Schools** and **Monitors**. Receptors in `data/receptors.geojson` are neighborhood / school / monitor, with no city field.
 - The frame has no Tonight or About nav item. Tonight is a P0 page, so it's reachable from the Forecast page's "Full table" link, and the top of its table is shown on Forecast.
 - The ranked list uses tonight's evening (5 PM) run. The map and chart use the latest run. The page says so ("run note").
