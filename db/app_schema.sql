@@ -28,3 +28,6 @@ CREATE TABLE IF NOT EXISTS skill_scores (
   computed_at TIMESTAMPTZ NOT NULL, method TEXT NOT NULL, metric TEXT NOT NULL,
   site_id TEXT NOT NULL, value DOUBLE PRECISION, n INTEGER, note TEXT,
   PRIMARY KEY (method, metric, site_id));
+CREATE TABLE IF NOT EXISTS web_reports (
+  id TEXT PRIMARY KEY, url TEXT NOT NULL, source_name TEXT, title TEXT, published_at TIMESTAMPTZ,
+  quote TEXT NOT NULL, topic TEXT, fetched_at TIMESTAMPTZ, via TEXT, search_query TEXT);
