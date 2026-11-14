@@ -9,6 +9,15 @@ beta: 0.05
 log_k: -5.8          # ln(g/s per MGD); prior, refit by calibration
 initial_sigma_y_m: 15.0
 initial_sigma_z_m: 2.0
+# Meander: in light night winds the direction wanders within the hour, so the hour-average puff is far wider
+# than the Pasquill-Gifford curves say. sigma_y gains (sigma_v * travel time). Regulatory models use a floor of
+# 0.2-0.5 m/s; 1.0 fitted the monitors better on the tuning period (before 2026) and also stands in for
+# valley drainage flow that a single wind station cannot resolve. 0 switches it off.
+sigma_v_ms: 1.0
+max_puff_age_h: 4.0
+# Storm-water dilution of the release above this flow (model/emission.py); refit by calibration. 0 = off.
+q_dil_mgd: 30.0
+dil_gamma: 3.0
 sources:
   - id: saturn_blvd
     name: Saturn Blvd river crossing (main hotspot)

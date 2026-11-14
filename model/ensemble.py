@@ -8,7 +8,6 @@ from dataclasses import dataclass
 import numpy as np
 
 from model import puff
-from model.emission import emission_factor
 from model.met import Met
 from model.sources import SourceConfig
 
@@ -29,20 +28,22 @@ def confidence_label(p50: float, p90: float) -> str:
     return "high" if ratio < 2 else "low" if ratio > 4 else "medium"
 
 
+def perturbations(n: int = N_MEMBERS, seed: int = 7) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """(direction offset deg, speed factor, standard-normal log k draw) per member; member 0 is the control."""
+    rng = np.random.default_rng(seed)
+    ddir, sf, z = np.zeros(n), np.ones(n), np.zeros(n)
+    for i in range(1, n):
+        ddir[i], sf[i], z[i] = rng.uniform(-15, 15), rng.uniform(0.7, 1.3), rng.standard_normal()
+    return ddir, sf, z
+
+
 def run(met: Met, flow_mgd: np.ndarray, log_k: np.ndarray, log_k_var: float, src: SourceConfig,
         rx: np.ndarray, ry: np.ndarray, background_ppb: np.ndarray | float, n: int = N_MEMBERS,
         seed: int = 7, keep_members: bool = False, simulate=puff.simulate) -> EnsembleResult:
-    rng = np.random.default_rng(seed)
-    factor = emission_factor(flow_mgd, met.temp_c, src.alpha, src.beta, src.t_ref)
-    jobs = []
-    for i in range(n):
-        if i == 0:
-            ddir, sf, dk = 0.0, 1.0, 0.0  # member 0 = control
-        else:
-            ddir, sf = rng.uniform(-15, 15), rng.uniform(0.7, 1.3)
-            dk = rng.normal(0, np.sqrt(max(log_k_var, 1e-6)))
-        emis = np.exp(np.asarray(log_k) + dk) * factor
-        jobs.append((met.perturbed(ddir, sf), emis))
+    ddir, sf, z = perturbations(n, seed)
+    factor = src.factor(flow_mgd, met.temp_c)
+    sd = np.sqrt(max(log_k_var, 1e-6))
+    jobs = [(met.perturbed(ddir[i], sf[i]), np.exp(np.asarray(log_k) + z[i] * sd) * factor) for i in range(n)]
     members = np.empty((n, len(met), len(rx)), dtype=np.float32)
     workers = min(n, os.cpu_count() or 1, MAX_WORKERS)
     if workers > 1 and len(rx) > 2000 and simulate is puff.simulate:

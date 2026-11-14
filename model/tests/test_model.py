@@ -17,9 +17,10 @@ def steady_met(hours=8, ws=2.0, wd=180.0, start=datetime(2026, 11, 14, 22, tzinf
     return Met(times, np.full(hours, ws), np.full(hours, wd), np.full(hours, temp), np.full(hours, cloud))
 
 
-def single_source():
+def single_source(sigma_v=0.0):
+    """One source; textbook Pasquill-Gifford spread unless a meander speed is given."""
     src = load_sources()
-    return src.with_params(shares=np.array([1.0, 0.0, 0.0]))
+    return src.with_params(shares=np.array([1.0, 0.0, 0.0]), sigma_v=sigma_v)
 
 
 def test_unit_conversion_roundtrip():
@@ -79,6 +80,8 @@ def test_calm_stable_night_is_worse_than_windy_day():
     day = steady_met(ws=6.0, start=datetime(2026, 7, 1, 10, tzinfo=TZ))
     e = np.full(8, 0.1)
     assert puff.simulate(night, e, src, rx, ry)[-1, 0] > 10 * puff.simulate(day, e, src, rx, ry)[-1, 0]
+    m = single_source(sigma_v=1.0)  # meander spreads the night plume sideways, but the night is still worse
+    assert puff.simulate(night, e, m, rx, ry)[-1, 0] > 2 * puff.simulate(day, e, m, rx, ry)[-1, 0]
 
 
 def test_kalman_converges_to_truth():
@@ -102,7 +105,7 @@ def test_relaxation():
 
 
 def test_calibration_recovers_log_k():
-    src = load_sources()
+    src = load_sources().with_params(q_dil=0.0)
     rng = np.random.default_rng(1)
     hours = 24
     start = datetime(2026, 11, 13, 18, tzinfo=TZ)
@@ -154,3 +157,53 @@ def test_hours_steps_in_real_time_across_clock_changes():
     for start in (datetime(2026, 10, 31, 17, tzinfo=TZ), datetime(2026, 3, 7, 17, tzinfo=TZ)):
         h = [t.astimezone(timezone.utc) for t in hours(start, 28)]
         assert len(set(h)) == 28 and all((b - a).total_seconds() == 3600 for a, b in zip(h, h[1:]))
+
+
+def test_simulate_points_matches_simulate():
+    rng = np.random.default_rng(3)
+    n = 30
+    start = datetime(2026, 3, 1, 12, tzinfo=TZ)
+    met = Met([start + timedelta(hours=i) for i in range(n)], rng.uniform(0, 4, n), rng.uniform(0, 360, n),
+              np.full(n, 15.0), rng.uniform(0, 1, n))
+    for sv in (0.0, 1.0):
+        src = load_sources().with_params(sigma_v=sv)
+        rx = src.x[0] + np.array([0.0, 800.0, -1500.0]); ry = src.y[0] + np.array([1500.0, -400.0, 300.0])
+        a = puff.simulate(met, np.ones(n), src, rx, ry, per_source=True)
+        b = puff.simulate_points(met, np.ones(n), src, rx, ry)
+        np.testing.assert_allclose(a, b, rtol=1e-3, atol=1e-4 * float(a.max()))
+
+
+def test_meander_puts_gas_on_a_receptor_beside_the_plume():
+    # wind from the south, receptor 1.5 km north but 600 m to the side: a class F textbook plume misses it
+    met = steady_met(ws=1.0)
+    rx_off = lambda s: puff.simulate(met, np.full(8, 0.1), s, np.array([s.x[0] + 600]), np.array([s.y[0] + 1500]))[-1, 0]
+    assert rx_off(single_source()) < 1e-3
+    assert rx_off(single_source(sigma_v=1.0)) > 0.1
+    on_axis = lambda s: puff.simulate(met, np.full(8, 0.1), s, np.array([s.x[0]]), np.array([s.y[0] + 1500]))[-1, 0]
+    assert on_axis(single_source(sigma_v=1.0)) < on_axis(single_source())  # the same gas is spread wider
+
+
+def test_dilution_makes_emission_fall_at_storm_flows():
+    f = lambda q: emission_factor(q, 15.0, 1.0, 0.0, q_dil=30.0, gamma=3.0)
+    assert f(10) < f(25)                      # rises with flow while the river is mostly sewage
+    assert f(300) < f(30)                     # storm water dilutes it
+    assert emission_factor(300, 15, 1.0, 0.0) == pytest.approx(300.0)  # term off by default
+    assert load_sources().factor(20.0, 15.0) == pytest.approx(float(emission_factor(20.0, 15.0, 1.0, 0.05, 15.0, 30.0, 3.0)))
+
+
+def test_kalman_gate_uses_base_k_not_its_own_state():
+    # the filter has drifted far below the base; a monitor the base model puts in the plume must still count
+    f = LogKFilter(mean=-12.0, var=1.0, ref=-5.0)
+    assert f.update(50.0, 2000.0, 0.4)
+    assert f.mean > -12.0
+    from model.kalman import run_series
+    obs = np.full((40, 1), np.exp(-4.0) * 2000.0 + 0.4)
+    means, variances, used = run_series(obs, np.full((40, 1), 2000.0), np.array([0.4]), ref_log_k=-5.0)
+    assert used == 40 and means[0] == -5.0 and means[-1] == pytest.approx(-4.0, abs=0.15)
+    assert len(means) == 41 and variances[-1] < variances[0]
+
+
+def test_one_plume_edge_hour_cannot_swing_k():
+    f = LogKFilter(mean=-5.0, var=0.1, ref=-5.0)
+    f.update(60.0, 20.0, 0.4)   # base model predicts 0.13 ppb here, monitor reads 60
+    assert abs(f.mean + 5.0) < 0.5
