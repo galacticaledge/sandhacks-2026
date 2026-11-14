@@ -20,6 +20,8 @@ const routeFromHash = (): Route => {
 const FALLBACK_OFFICIAL = {
   sdapcd_h2s: "https://www.sdapcd.org/content/sdapcd/about/tj-river-valley/tjrv-air-quality-monitoring.html",
   sdapcd_alerts_signup: "https://public.govdelivery.com/accounts/CASDCAPCD/subscriber/new",
+  guidance_en: "https://www.sdapcd.org/content/dam/sdapcd/documents/tjrv/Community%20H2S%20Guidance_11.13.24_ENGLISH.pdf",
+  guidance_es: "https://www.sdapcd.org/content/dam/sdapcd/documents/tjrv/Community%20H2S%20Guidance_11.13.24_SPANISH.pdf",
 };
 
 export default function App() {
@@ -57,7 +59,7 @@ export default function App() {
           <img src="/favicon.svg" alt="" width={28} height={28} />
           <span><strong>Smellcast</strong><small>{t.tagline}</small></span>
         </a>
-        <nav aria-label="Main">
+        <nav aria-label={t.aria_main}>
           {ROUTES.map((r) => (
             <a key={r} href={`#/${r}`} className={route === r ? "active" : ""} aria-current={route === r ? "page" : undefined}>
               {t[`nav_${r}` as keyof typeof t] as string}
@@ -69,7 +71,7 @@ export default function App() {
             ● {t.updated} {fmtDateTime(h2sOk, lang)}
           </span>
           {now?.demo_mode && <span className="chip chip-demo">DEMO</span>}
-          <div className="seg" role="group" aria-label="Language">
+          <div className="seg" role="group" aria-label={t.language}>
             <button className={lang === "en" ? "on" : ""} onClick={() => setLang("en")}>EN</button>
             <button className={lang === "es" ? "on" : ""} onClick={() => setLang("es")}>ES</button>
           </div>

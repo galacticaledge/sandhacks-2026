@@ -58,8 +58,8 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
     if (!q.trim()) return;
     const u = `https://nominatim.openstreetmap.org/search?format=json&limit=1&bounded=1&viewbox=-117.14,32.60,-117.03,32.535&q=${encodeURIComponent(q)}`;
     const r = await fetch(u).then((x) => x.json()).catch(() => []);
-    if (r[0]) pickAt(parseFloat(r[0].lat), parseFloat(r[0].lon));
-    else setPickErr(t.outside);
+    if (Array.isArray(r) && r[0]) pickAt(parseFloat(r[0].lat), parseFloat(r[0].lon));
+    else { setPoint(null); setPickErr(t.outside); }
   };
 
   const monitors = useMemo(() => (now?.monitors ?? []).map((m) => ({ ...m })), [now]);
@@ -107,7 +107,10 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
             </div>
             <p className="muted small">{point.lat.toFixed(4)}, {point.lon.toFixed(4)} · {t.peak}: {fmtPpb(Math.max(...point.p50))} ppb · {t.peak_high}: {fmtPpb(Math.max(...point.p90))} ppb</p>
             <PointChart times={point.valid_times} s={point} t={t} lang={lang} />
-            <LevelBadge level={levelOf(Math.max(...point.p50))} t={t} />
+            <div className="badges">
+              <span>{t.median}: <LevelBadge level={levelOf(Math.max(...point.p50))} t={t} /></span>
+              <span>{t.high_est}: <LevelBadge level={levelOf(Math.max(...point.p90))} t={t} /></span>
+            </div>
           </div>
         ) : (
           <p className="hint">{t.click_hint}</p>
@@ -126,14 +129,14 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
         </div>
         {meta && met && (
           <div className="card inputs">
-            <h3>Inputs</h3>
+            <h3>{t.inputs}</h3>
             <dl>
-              <dt>Wind</dt><dd>{(met.wind_ms[hour] ?? 0).toFixed(1)} m/s from {Math.round(met.wind_dir_deg[hour] ?? 0)}°</dd>
-              <dt>Stability</dt><dd>Class {met.stability[hour]} {"EF".includes(met.stability[hour]) ? "(still night air: gas pools)" : ""}</dd>
-              <dt>Temp</dt><dd>{(met.temp_c[hour] ?? 0).toFixed(1)} °C</dd>
-              <dt>River flow</dt><dd>{meta.inputs.flow_mgd[hour]} MGD <span className="muted">({meta.inputs.flow_source})</span></dd>
-              <dt>Calibration</dt><dd>log k {meta.inputs.log_k_now.toFixed(2)} ± {Math.sqrt(meta.inputs.log_k_var).toFixed(2)} <span className="muted">({meta.inputs.filter_obs_used} monitor-hours used)</span></dd>
-              <dt>Ensemble</dt><dd>{meta.inputs.members} members</dd>
+              <dt>{t.wind}</dt><dd>{(met.wind_ms[hour] ?? 0).toFixed(1)} {t.wind_from} {Math.round(met.wind_dir_deg[hour] ?? 0)}°</dd>
+              <dt>{t.stability}</dt><dd>{t.class_word} {met.stability[hour]} {"EF".includes(met.stability[hour]) ? t.stab_still : ""}</dd>
+              <dt>{t.temp}</dt><dd>{(met.temp_c[hour] ?? 0).toFixed(1)} °C</dd>
+              <dt>{t.river_flow}</dt><dd>{meta.inputs.flow_mgd[hour]} MGD <span className="muted">({meta.inputs.flow_source === "assumed default" ? t.flow_assumed : meta.inputs.flow_source.replace(/^gauge/, t.flow_gauge)})</span></dd>
+              <dt>{t.calibration}</dt><dd>log k {meta.inputs.log_k_now.toFixed(2)} ± {Math.sqrt(meta.inputs.log_k_var).toFixed(2)} <span className="muted">({meta.inputs.filter_obs_used} {t.monitor_hours})</span></dd>
+              <dt>{t.ensemble}</dt><dd>{meta.inputs.members} {t.members}</dd>
             </dl>
           </div>
         )}

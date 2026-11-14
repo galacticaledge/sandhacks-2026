@@ -57,7 +57,7 @@ export function ReplayPage({ t, lang }: { t: Strings; lang: Lang }) {
       <div className="row">
         <label>{t.night_of}{" "}
           <select value={night} onChange={(e) => setNight(e.target.value)}>
-            {nights.map((n) => <option key={n.night} value={n.night}>{n.night} · peak {fmtPpb(n.peak_ppb)} ppb</option>)}
+            {nights.map((n) => <option key={n.night} value={n.night}>{n.night} · {t.peak_word} {fmtPpb(n.peak_ppb)} ppb</option>)}
           </select>
         </label>
         <span className="pill warn-pill">{t.replay_label}</span>

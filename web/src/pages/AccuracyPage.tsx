@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { get } from "../api";
+import { get, type Receptor } from "../api";
 import type { Lang, Strings } from "../i18n";
 
 type Sum = { n_nights: number; n_orange_nights?: number; hit_rate?: number | null; false_alarm_ratio?: number | null; category_accuracy?: number; mae_log?: number };
@@ -13,29 +13,31 @@ type Skill = {
 };
 const pct = (v: number | null | undefined) => (v == null ? "–" : `${Math.round(v * 100)}%`);
 
-export function AccuracyPage({ t }: { t: Strings; lang: Lang }) {
+export function AccuracyPage({ t, lang }: { t: Strings; lang: Lang }) {
   const [s, setS] = useState<Skill | null>(null);
+  const [names, setNames] = useState<Record<string, string>>({});
   useEffect(() => { get<Skill>("/api/skill").then(setS); }, []);
+  useEffect(() => { get<Receptor[]>("/api/receptors").then((r) => setNames(Object.fromEntries(r.map((x) => [x.id, x.name])))).catch(() => {}); }, []);
   const methods: [string, string][] = [["model", t.model], ["persistence", t.persistence], ["climatology", t.climatology]];
   const all = (m: string) => s?.summary?.[m]?.all;
   const chart = methods.map(([k, label]) => ({ label, mae: all(k)?.mae_log ?? null }));
   const hist = s?.history;
   const days = hist?.hours ? (hist.hours / 3 / 24).toFixed(1) : "0";
+  const nNights = s?.nights?.length ?? 0, nOrange = all("model")?.n_orange_nights ?? 0;
+  const small = !!s && (nNights < 30 || nOrange === 0);
 
   return (
     <div className="page">
       <h1>{t.acc_title}</h1>
       <p className="lede">{t.acc_sub}</p>
+      {small && <p className="card notice sample-line"><strong>{t.acc_small.replace("{n}", String(nNights)).replace("{m}", String(nOrange))}</strong></p>}
       <div className="card notice">
         <h3>{t.data_status}</h3>
         <p>
-          {hist?.start ? <>Monitor history: {hist.start.slice(0, 10)} → {hist.end?.slice(0, 10)} (~{days} days per monitor, {hist.hours} readings). </> : null}
-          {s?.nights?.length ?? 0} nights replayed. {s?.label}
+          {hist?.start ? t.acc_hist.replace("{a}", hist.start.slice(0, 10)).replace("{b}", hist.end?.slice(0, 10) ?? "").replace("{d}", days).replace("{h}", String(hist.hours)) + " " : null}
+          {t.acc_nights.replace("{n}", String(nNights))} {s?.label ? (t.api_labels[s.label] ?? s.label) : null}
         </p>
-        <p className="small muted">
-          Historical SDAPCD data (months of hourly readings, including real spikes) is pending; see docs/data_status.md. Until it lands,
-          these scores cover only the days we have captured from the live feed, which have no orange nights, so hit rate and false alarms can't be measured yet. We report this as it is.
-        </p>
+        {small && <p className="small muted">{t.acc_note}</p>}
       </div>
       <div className="grid3">
         {methods.map(([k, label]) => {
@@ -71,10 +73,10 @@ export function AccuracyPage({ t }: { t: Strings; lang: Lang }) {
           <h3>{t.lomo}</h3>
           <p className="muted small">{t.lomo_sub}</p>
           <table className="simple">
-            <thead><tr><th>Monitor</th><th>MAE (log)</th><th>r (log)</th><th>hours</th></tr></thead>
+            <thead><tr><th>{t.monitor}</th><th>MAE (log)</th><th>r (log)</th><th>{t.hours}</th></tr></thead>
             <tbody>
               {Object.entries(s?.leave_one_monitor_out ?? {}).map(([k, v]) => (
-                <tr key={k}><td>{k}</td><td>{v.mae_log.toFixed(2)}</td><td>{v.r_log == null ? "–" : v.r_log.toFixed(2)}</td><td>{v.n_hours}</td></tr>
+                <tr key={k}><td>{names[k] ?? k}</td><td>{v.mae_log.toFixed(2)}</td><td>{v.r_log == null ? "–" : v.r_log.toFixed(2)}</td><td>{v.n_hours}</td></tr>
               ))}
             </tbody>
           </table>
@@ -82,11 +84,11 @@ export function AccuracyPage({ t }: { t: Strings; lang: Lang }) {
         <div className="card">
           <h3>{t.spatial}</h3>
           {s?.spatial?.n_complaints ? (
-            <p>{s.spatial.n_complaints} odor complaints during forecast windows. {pct(s.spatial.share_in_top20pct_area)} fell in the top-20% forecast area (chance: {pct(s.spatial.chance_share)}). Mean percentile: {pct(s.spatial.mean_percentile)}.</p>
+            <p>{t.acc_spatial.replace("{n}", String(s.spatial.n_complaints)).replace("{a}", pct(s.spatial.share_in_top20pct_area)).replace("{b}", pct(s.spatial.chance_share)).replace("{c}", pct(s.spatial.mean_percentile))}</p>
           ) : <p className="muted">{t.na}</p>}
         </div>
       </div>
-      {s?.computed_at && <p className="muted small">Scored {new Date(s.computed_at).toLocaleString()}</p>}
+      {s?.computed_at && <p className="muted small">{t.scored} {new Date(s.computed_at).toLocaleString(lang === "es" ? "es-MX" : "en-US")}</p>}
     </div>
   );
 }
