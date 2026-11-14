@@ -247,6 +247,29 @@ def replace_spills(rows: list[dict]):
                               :event_type, :volume, :notes)"""), rows)
 
 
+# ---------- web reports (news quotes fetched through Bright Data) ----------
+def upsert_web_report(r: dict):
+    r = {k: r.get(k) for k in ("id", "url", "source_name", "title", "published_at", "quote", "topic",
+                                "fetched_at", "via", "search_query")}
+    for k in ("published_at", "fetched_at"):
+        r[k] = ts(dt(r[k])) if r[k] else None
+    execute("""INSERT INTO web_reports (id, url, source_name, title, published_at, quote, topic, fetched_at, via,
+               search_query) VALUES (:id, :url, :source_name, :title, :published_at, :quote, :topic, :fetched_at,
+               :via, :search_query)
+               ON CONFLICT (id) DO UPDATE SET title = excluded.title, published_at = excluded.published_at,
+               quote = excluded.quote, topic = excluded.topic, fetched_at = excluded.fetched_at,
+               via = excluded.via, search_query = excluded.search_query""", r)
+
+
+def web_reports(start: datetime, end: datetime) -> list[dict]:
+    """Reports published in [start, end), newest first."""
+    rows = query("""SELECT * FROM web_reports WHERE published_at >= :a AND published_at < :b
+                    ORDER BY published_at DESC""", {"a": ts(start), "b": ts(end)})
+    for r in rows:
+        r["published_at"] = dt(r["published_at"]); r["fetched_at"] = dt(r["fetched_at"])
+    return rows
+
+
 # ---------- fetch log / freshness ----------
 def log_fetch(source: str, status: str, raw_path: str | None = None, detail: str | None = None):
     execute("""INSERT INTO source_fetches (source, fetched_at, status, raw_path, detail)
@@ -269,6 +292,10 @@ def add_subscription(s: dict):
     execute("""INSERT INTO subscriptions (id, contact, channel, language, receptor_id, created_at, token)
                VALUES (:id, :contact, :channel, :language, :receptor_id, :created_at, :token)""",
             {**s, "created_at": ts(s["created_at"])})
+
+
+def has_subscription(contact: str, receptor_id: str) -> bool:
+    return bool(query("SELECT 1 FROM subscriptions WHERE contact = :c AND receptor_id = :r", {"c": contact, "r": receptor_id}))
 
 
 def remove_subscription(token: str) -> bool:

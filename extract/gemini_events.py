@@ -22,6 +22,8 @@ class FlowEvent(BaseModel):
     expected_flow_mgd: float | None = None
     flow_delta_mgd: float | None = None
     peak_flow_mgd: float | None = None
+    # What the MGD numbers measure. Only river flow at the border may change the model's flow.
+    flow_refers_to: Literal["river_at_border", "plant_or_pipe", "other"] = "other"
     confidence: float = Field(ge=0, le=1)
     quote: str = Field(min_length=10)
 
@@ -38,6 +40,11 @@ U.S.-Mexico border: pump station shutdowns, collector or pipe failures, repairs,
 
 Rules:
 - Use only facts stated in the text. Never guess numbers. Leave a number null if the text doesn't state it.
+- flow_refers_to says what the MGD numbers measure: "river_at_border" only when the sentence gives the total flow of
+  the Tijuana River itself crossing the border; "plant_or_pipe" for treatment-plant capacity or throughput, pump
+  station or collector flows, diversions, and volumes spilled, bypassed or kept out of the river; "other" otherwise.
+- expected_flow_mgd is the total river flow at the border; flow_delta_mgd is a change in that total. If the numbers
+  are about a plant, pump or pipe, still record the event but leave expected_flow_mgd and flow_delta_mgd null.
 - Flows are in million gallons per day (MGD). Convert only if the text gives another unit explicitly.
 - Times are Pacific Time; write ISO-8601 with offset. If only a date is given, use 00:00 that day.
 - published_at is the release date. If unknown, use starts_at.
@@ -61,7 +68,7 @@ def extract(text: str, source_url: str) -> list[dict]:
     from google.genai import types
     client = genai.Client(api_key=key)
     resp = client.models.generate_content(
-        model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite"),
+        model=os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"),
         contents=PROMPT + text[:60_000],
         config=types.GenerateContentConfig(response_mime_type="application/json", response_schema=Extraction,
                                            temperature=0),
@@ -75,6 +82,8 @@ def extract(text: str, source_url: str) -> list[dict]:
     for ev in parsed.events:
         if ev.quote.strip() not in " ".join(text.split()) and ev.quote.strip() not in text:
             ev.confidence = min(ev.confidence, 0.5)  # quote not found verbatim -> don't let it drive the model
+        if ev.flow_refers_to != "river_at_border":  # plant capacity or pipe flow must never stand in for river flow
+            ev.expected_flow_mgd = ev.flow_delta_mgd = None
         out.append({**json.loads(ev.model_dump_json()), "id": event_id(source_url, ev.quote),
                     "source_url": source_url, "entered_by": "gemini"})
     return out

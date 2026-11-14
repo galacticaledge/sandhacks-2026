@@ -21,7 +21,10 @@ export const levelStyle = (l: Level | null | undefined) => LEVELS.find((x) => x.
 export const fmtPpb = (v: number | null | undefined) => {
   if (v == null || Number.isNaN(v)) return "–";
   const x = Math.max(0, v);
-  return x < 10 ? x.toFixed(1) : Math.round(x).toString();
+  const s = x < 10 ? x.toFixed(1) : Math.round(x).toString();
+  // never show a number that has reached a level threshold the raw value has not (29.96 -> "29.9", not "30")
+  if (+s > x && [5, 30, 200].some((th) => x < th && +s >= th)) return (Math.floor(x * 10) / 10).toFixed(1);
+  return s;
 };
 
 export function fmtTime(iso: string, lang: string, withDay = false) {
@@ -36,4 +39,14 @@ export function fmtDateTime(iso: string | null | undefined, lang: string) {
   return new Date(iso).toLocaleString(lang === "es" ? "es-MX" : "en-US", {
     month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles",
   });
+}
+
+export function fmtDate(iso: string | null | undefined, lang: string) {
+  if (!iso) return "–";
+  return new Date(iso).toLocaleDateString(lang === "es" ? "es-MX" : "en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Los_Angeles" });
+}
+
+// Clock time with minutes ("5:15 PM"), Pacific.
+export function fmtClock(iso: string, lang: string) {
+  return new Date(iso).toLocaleTimeString(lang === "es" ? "es-MX" : "en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" });
 }

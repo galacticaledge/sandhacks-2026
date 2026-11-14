@@ -14,3 +14,4 @@ logs/
 .omc/
 data/calibration.json
 data/skill.json
+web/tsconfig.tsbuildinfo

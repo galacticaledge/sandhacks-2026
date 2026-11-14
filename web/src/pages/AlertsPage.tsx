@@ -8,6 +8,7 @@ export function AlertsPage({ t, lang, official }: { t: Strings; lang: Lang; offi
   const [language, setLanguage] = useState<Lang>(lang);
   const [email, setEmail] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  useEffect(() => setLanguage(lang), [lang]);
   useEffect(() => { get<Receptor[]>("/api/receptors").then((r) => setRecs(r.filter((x) => x.kind !== "monitor"))); }, []);
 
   const submit = async (e: React.FormEvent) => {

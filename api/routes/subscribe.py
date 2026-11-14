@@ -1,6 +1,7 @@
 """Alert subscriptions: contact + receptor + language + channel only. One-click unsubscribe."""
 from __future__ import annotations
 
+import re
 import secrets
 import uuid
 from datetime import datetime, timezone
@@ -13,6 +14,8 @@ from db import store
 from model.run import receptors
 
 router = APIRouter(prefix="/api")
+# One @, no spaces or control characters (a newline here would break the email headers and stop every alert).
+EMAIL = re.compile(r"[^@\s\x00-\x1f]+@[^@\s\x00-\x1f]+\.[^@\s\x00-\x1f]+")
 
 
 class Sub(BaseModel):
@@ -26,10 +29,13 @@ class Sub(BaseModel):
 def subscribe(s: Sub):
     if s.receptor_id not in {r["id"] for r in receptors() if r["kind"] != "monitor"}:
         raise HTTPException(400, "unknown neighborhood or school")
-    if "@" not in s.contact or "." not in s.contact.split("@")[-1]:
+    contact = s.contact.strip().lower()
+    if not EMAIL.fullmatch(contact):
         raise HTTPException(400, "enter a valid email address")
+    if store.has_subscription(contact, s.receptor_id):
+        return {"ok": True, "already_subscribed": True}
     token = secrets.token_urlsafe(24)
-    store.add_subscription({"id": uuid.uuid4().hex, "contact": s.contact.strip().lower(), "channel": s.channel,
+    store.add_subscription({"id": uuid.uuid4().hex, "contact": contact, "channel": s.channel,
                             "language": s.language, "receptor_id": s.receptor_id,
                             "created_at": datetime.now(timezone.utc), "token": token})
     return {"ok": True, "unsubscribe_url": f"/api/unsubscribe/{token}"}

@@ -1,4 +1,9 @@
-"""One forecast run: filter -> ensemble -> grids, overlays, receptor series (spec 5.4-5.6).
+"""One forecast run: filter -> ensemble physics -> monitor correction -> grids, overlays, receptor series.
+
+Physics (spec 5.2-5.6): puff model, Kalman filter on log k, 20-member ensemble; its pointwise median is
+the physics field. Correction (model/blend.py): tonight's peak at each monitor is predicted from that
+physics peak plus the monitor's own recent readings; P10/P50/P90 come from the correction's past errors
+and are spread over the grid, so the map and the monitor forecasts agree.
 
 python -m model.run                      # live run now
 python -m model.run --issued 2026-11-13T17:00 --scenario replay --weather observed
@@ -10,24 +15,23 @@ import json
 import logging
 import shutil
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import numpy as np
 
 from config import FORECAST_DIR, MONITORS, ROOT, TZ
 from db import store
-from model import ensemble, puff
-from model.emission import emission_factor
+from model import blend, ensemble, kalman, puff
 from model.geo import make_grid, to_xy
 from model.inputs import assemble_met, flow_series, hours, load_calibration, observations
-from model.kalman import LogKFilter, relax_toward
+from model.kalman import RELAX_TAU_H, LogKFilter, relax_toward
 from model.render import write_png
 from model.sources import load_sources
 
 log = logging.getLogger("model.run")
 UTC = timezone.utc
 SPINUP_H = 4
-FILTER_H = 48
+FILTER_H = 240   # the filter forgets within a few days; ten covers it
 LEAD_H = 24
 
 
@@ -44,28 +48,63 @@ def current_params():
     cal = load_calibration()
     bg = np.full(len(MONITORS), 0.45)
     if cal:
-        src = src.with_params(log_k=cal["log_k"], alpha=cal["alpha"], beta=cal["beta"], shares=np.array(cal["shares"]))
+        src = src.with_params(log_k=cal["log_k"], alpha=cal["alpha"], beta=cal["beta"], shares=np.array(cal["shares"]),
+                              q_dil=cal.get("q_dil_mgd", 0.0), dil_gamma=cal.get("dil_gamma", 2.0),
+                              sigma_v=cal.get("sigma_v_ms", src.sigma_v))
         bg = np.array(cal["background"])
     return src, bg, cal
 
 
-def run_filter(issued: datetime, src, bg, prior_logk: float, weather_kinds=("observed", "forecast")):
-    """Kalman filter on log k over the FILTER_H hours before issue, using data available at issue time."""
+def run_filter(issued: datetime, src, bg, weather_kinds=("observed", "forecast")):
+    """Kalman filter on log k over the FILTER_H hours before issue, using data available at issue time.
+    Starts from the calibrated base k; an hour counts only when the base model puts signal on the monitor."""
     t0 = issued - timedelta(hours=FILTER_H + SPINUP_H)
     times = hours(t0, FILTER_H + SPINUP_H)
     met, _ = assemble_met(times, list(weather_kinds), issued_before=issued)
     flow, _, _ = flow_series(times, issued)
-    mx, my = to_xy([m.lat for m in MONITORS], [m.lon for m in MONITORS])
-    factor = emission_factor(flow, met.temp_c, src.alpha, src.beta, src.t_ref)
-    unit = puff.simulate(met, factor, src, mx, my)  # ppb at monitors for k = 1
+    mx, my = monitor_xy()
+    unit = np.tensordot(src.shares, puff.simulate_points(met, np.ones(len(met)), src, mx, my), axes=(0, 0))
+    unit = unit * src.factor(flow, met.temp_c)[:, None]   # ppb at monitors for k = 1
     obs = observations(times)
-    f = LogKFilter(mean=prior_logk, var=1.0)
-    used = 0
-    for h in range(SPINUP_H, len(times)):
-        f.predict()
-        for j in range(len(MONITORS)):
-            used += f.update(obs[h, j], float(unit[h, j]), float(bg[j]))
-    return f, used
+    obs[:SPINUP_H] = np.nan
+    means, variances, used = kalman.run_series(obs, unit, bg, src.log_k)
+    return LogKFilter(mean=float(means[-1]), var=float(variances[-1]), ref=src.log_k), used
+
+
+def monitor_xy():
+    return to_xy([m.lat for m in MONITORS], [m.lon for m in MONITORS])
+
+
+def last_complete_night(issued: datetime) -> date:
+    """Evening date of the most recent 6 PM - 9 AM night that had ended by the issue time."""
+    loc = issued.astimezone(TZ)
+    return loc.date() - timedelta(days=1 if loc.hour >= blend.NIGHT_END_H else 2)
+
+
+def history_inputs(issued: datetime, base: np.ndarray) -> dict[str, np.ndarray]:
+    """The correction's history features from readings before the issue hour only."""
+    last = last_complete_night(issued)
+    prev = np.full((blend.WEEK_N, len(MONITORS)), np.nan)
+    for b in range(blend.WEEK_N):
+        d = last - timedelta(days=b)
+        prev[b] = blend.night_peak(observations(hours(datetime(d.year, d.month, d.day, blend.NIGHT_START_H, tzinfo=TZ), 15)))
+    today = observations(hours(issued - timedelta(hours=blend.TODAY_H), blend.TODAY_H))
+    return blend.history_features(prev, today, base)
+
+
+def correct(issued: datetime, valid: list[datetime], physics_mon: np.ndarray, cal_blend: dict) -> dict | None:
+    """Night-peak quantiles and scale factors at the monitors. physics_mon [hours, M] over `valid`."""
+    night = [i for i, t in enumerate(valid) if blend.is_night_hour(t.astimezone(TZ).hour)]
+    if not night:
+        return None
+    peak = physics_mon[night].max(axis=0)
+    feats = history_inputs(issued, np.asarray(cal_blend["base"], dtype=float))
+    X = blend.design(peak, feats)
+    q = blend.predict(cal_blend, X)
+    return {"quantiles": q, "scale": blend.scales(q, peak), "physics_peak": peak, "features": feats,
+            "night": np.array([i in night for i in range(len(valid))]),
+            "mult": blend.multipliers(blend.scales(q, peak), cal_blend.get("hourly_ratio")),
+            "contributions": blend.contributions(cal_blend, X)}
 
 
 def run_forecast(issued: datetime | None = None, scenario: str = "live", weather: str = "forecast",
@@ -76,9 +115,8 @@ def run_forecast(issued: datetime | None = None, scenario: str = "live", weather
     run_id = issued.astimezone(UTC).strftime("%Y%m%dT%H%MZ") + ("" if scenario == "live" else f"-{scenario}")
     src, bg, cal = params or current_params()
 
-    hist = store.k_history(30) if scenario == "live" else []
-    log_k_median = float(np.median(hist)) if len(hist) >= 6 else src.log_k
-    f, n_used = run_filter(issued, src, bg, log_k_median)
+    log_k_median = src.log_k   # calibrated base; the filter state is held through the forecast (RELAX_TAU_H)
+    f, n_used = run_filter(issued, src, bg)
 
     times = hours(issued - timedelta(hours=SPINUP_H), SPINUP_H + LEAD_H)
     if weather == "observed":
@@ -93,7 +131,7 @@ def run_forecast(issued: datetime | None = None, scenario: str = "live", weather
         met.stab[:SPINUP_H] = spin.stab; met_src[:SPINUP_H] = spin_src
     flow, events_used, flow_src = flow_series(times, issued)
     lead = np.array([max(i - SPINUP_H, 0) for i in range(len(times))])
-    log_k = relax_toward(f.mean, log_k_median, lead)
+    log_k = relax_toward(f.mean, log_k_median, lead, RELAX_TAU_H)
 
     recs = receptors()
     rx, ry = to_xy([r["lat"] for r in recs], [r["lon"] for r in recs])
@@ -108,8 +146,18 @@ def run_forecast(issued: datetime | None = None, scenario: str = "live", weather
         bgv[len(ax) - len(MONITORS) + j] = bg[j]
     res = ensemble.run(met, flow, log_k, f.var, src, ax, ay, bgv, n=n_members)
     sl = slice(SPINUP_H, None)
-    p10, p50, p90 = res.p10[sl], res.p50[sl], res.p90[sl]
     valid = times[SPINUP_H:]
+    nm = len(MONITORS)
+    physics = res.p50[sl]
+    corr = correct(issued, valid, physics[:, -nm:], cal["blend"]) if cal and cal.get("blend") else None
+    if corr is not None:
+        # multipliers are interpolated between monitors, so the map matches the monitor forecasts
+        mx, my = monitor_xy()
+        mult = blend.spread_scales(corr["mult"], mx, my, ax, ay)
+        mult[-nm:] = corr["mult"]
+        p10, p50, p90 = blend.hourly_quantiles(physics, corr["night"], mult)
+    else:   # no correction fitted: raw ensemble percentiles
+        p10, p50, p90 = res.p10[sl], physics, res.p90[sl]
 
     out_dir = FORECAST_DIR / run_id
     if out_dir.exists():
@@ -147,7 +195,10 @@ def run_forecast(issued: datetime | None = None, scenario: str = "live", weather
             "log_k_series": np.round(log_k[SPINUP_H:], 3).tolist(), "filter_obs_used": n_used,
             "alpha": src.alpha, "beta": src.beta, "shares": dict(zip(src.ids, np.round(src.shares, 3).tolist())),
             "background_ppb": dict(zip([m.site_id for m in MONITORS], np.round(bg, 2).tolist())),
-            "calibration": cal, "members": n_members, "model": "gaussian_puff",
+            "calibration": cal, "members": n_members,
+            "model": "gaussian_puff+monitor_correction" if corr is not None else "gaussian_puff",
+            "sigma_v_ms": src.sigma_v, "q_dil_mgd": src.q_dil, "log_k_base": src.log_k,
+            "correction": correction_meta(corr, cal),
         },
         "receptors": recs, "series": series,
         "elapsed_s": round(time.time() - t_start, 1),
@@ -156,6 +207,24 @@ def run_forecast(issued: datetime | None = None, scenario: str = "live", weather
     store.save_run(run_id, scenario, issued, {k: v for k, v in meta["inputs"].items() if k != "met"}, f.mean, f.var, "ok")
     log.info("run %s done in %.1fs (filter used %d obs, log k %.2f±%.2f)", run_id, meta["elapsed_s"], n_used, f.mean, f.var ** .5)
     return meta
+
+
+def correction_meta(corr: dict | None, cal: dict | None) -> dict | None:
+    """What the monitor correction did, per monitor, so the forecast shows its inputs."""
+    if corr is None:
+        return None
+    ids = [m.site_id for m in MONITORS]
+    r = lambda v: round(float(v), 3)
+    return {
+        "note": "night peak = physics peak corrected by the monitor's own recent readings; "
+                "P10/P90 from the correction's past errors",
+        "fit_before": cal["blend"].get("fit_before"),
+        "physics_peak_ppb": {s: r(corr["physics_peak"][j]) for j, s in enumerate(ids)},
+        "night_peak_ppb": {s: dict(zip(("p10", "p50", "p90"), map(r, corr["quantiles"][j]))) for j, s in enumerate(ids)},
+        "scale": {s: dict(zip(("p10", "p50", "p90"), map(r, corr["scale"][j]))) for j, s in enumerate(ids)},
+        "features_log1p_ppb": {s: {k: r(v[j]) for k, v in corr["features"].items()} for j, s in enumerate(ids)},
+        "contributions_log1p": {s: {k: r(v) for k, v in corr["contributions"][j].items()} for j, s in enumerate(ids)},
+    }
 
 
 if __name__ == "__main__":

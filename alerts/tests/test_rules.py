@@ -30,3 +30,17 @@ def test_daytime_peak_ignored():
     t = times()
     p = [1.0] * 24; p[20] = 80  # 1 PM next day
     assert evaluate(t, p, p, p)["kind"] == "none"
+
+
+def test_confidence_uses_the_displayed_peaks():
+    t = times()
+    p50 = [0.8] * 24
+    p90 = [1.0] * 24; p90[10] = 7.6  # the high estimate peaks in a different hour than the median
+    assert evaluate(t, p50, p50, p90)["confidence"] == "low"
+
+
+def test_email_pattern_rejects_header_injection():
+    from api.routes.subscribe import EMAIL
+    assert EMAIL.fullmatch("a.b@example.com")
+    for bad in ("x@y.com\nbcc: v@z.com", "a@@b.com", "a b@c.com", "nope", "a@b"):
+        assert not EMAIL.fullmatch(bad)

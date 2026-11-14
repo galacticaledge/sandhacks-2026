@@ -16,7 +16,9 @@ CALIBRATION_PATH = DATA_DIR / "calibration.json"
 
 
 def hours(start: datetime, n: int) -> list[datetime]:
-    return [start + timedelta(hours=i) for i in range(n)]
+    # step in UTC: adding hours to a Pacific-zone datetime skips or repeats an hour at clock changes
+    tz, u = start.tzinfo, start.astimezone(UTC)
+    return [(u + timedelta(hours=i)).astimezone(tz) for i in range(n)]
 
 
 def assemble_met(times: list[datetime], prefer: list[str], issued_before: datetime | None = None) -> tuple[Met, list[str]]:
@@ -54,10 +56,22 @@ def assemble_met(times: list[datetime], prefer: list[str], issued_before: dateti
 
 
 def flow_series(times: list[datetime], as_of: datetime) -> tuple[np.ndarray, list[dict], str]:
-    """Carry forward the latest gauge value known at as_of, then apply announced flow events (conf >= 0.6)."""
-    hist = store.flow_upto(as_of.astimezone(TZ).date(), 1)
-    base, src = (float(hist[0]["mgd"]), f"gauge {hist[0]['date']}") if hist else (DEFAULT_FLOW_MGD, "assumed default")
-    q = np.full(len(times), base)
+    """Daily gauge flow for each hour, using only complete days before the issue date. Hours after the last
+    gauge day carry its value forward; announced river-flow events (conf >= 0.6) may adjust only those hours."""
+    last_day = as_of.astimezone(TZ).date() - timedelta(days=1)  # the issue day itself is a partial mean
+    days = [t.astimezone(TZ).date() for t in times]
+    span = (last_day - min(days)).days + 60 if days else 60
+    hist = {date.fromisoformat(str(r["date"])[:10]): float(r["mgd"]) for r in store.flow_upto(last_day, max(span, 60))}
+    if not hist:
+        return np.full(len(times), DEFAULT_FLOW_MGD), [], "assumed default"
+    known = sorted(hist)
+    newest = known[-1]
+    q = np.empty(len(times))
+    for i, d in enumerate(days):
+        prior = [k for k in known if k <= d]
+        q[i] = hist[prior[-1]] if prior else hist[known[0]]
+    carried = np.array([d > newest for d in days])  # the gauge has no value for these hours yet
+    src = f"gauge {newest}"
     used = []
     for e in store.flow_events():
         if (e.get("confidence") or 0) < 0.6 or e["starts_at"] is None:
@@ -65,7 +79,7 @@ def flow_series(times: list[datetime], as_of: datetime) -> tuple[np.ndarray, lis
         if e["published_at"] and e["published_at"] > as_of:
             continue  # not known yet at issue time
         end = e["ends_at"] or (e["starts_at"] + timedelta(days=7))
-        active = np.array([e["starts_at"] <= t < end for t in times])
+        active = np.array([e["starts_at"] <= t < end for t in times]) & carried
         if not active.any():
             continue
         if e.get("expected_flow_mgd") is not None:

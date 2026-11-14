@@ -39,8 +39,9 @@ def _fmt_time(iso: str, lang: str) -> str:
 
 def render(lang: str, place: str, ev: dict, unsubscribe_url: str) -> tuple[str, str]:
     w = WORDS[lang]
-    lvl = "orange" if ev["kind"] == "likely" else (ev.get("level_p90") or "orange")
-    lvl = lvl if lvl in ("orange", "review") else "orange"
+    # Likely: guidance for the median's level, so a 200+ ppb median gets the multi-agency text.
+    # Possible: always orange. A high estimate alone must not print "SDAPCD will activate review".
+    lvl = "review" if ev["kind"] == "likely" and ev.get("level") == "review" else "orange"
     g = GUIDANCE[lang][lvl]
     win = ev.get("orange_window") or ev["window"]
     text = Template((TPL / lang / "alert.txt").read_text()).substitute(
@@ -92,7 +93,8 @@ def send_evening_alerts(meta: dict, update: bool = False) -> int:
     names = {r["id"]: r["name"] for r in meta["receptors"]}
     sent_tonight: dict[str, list[dict]] = {}
     for a in store.alerts_sent_for(night):
-        sent_tonight.setdefault(a["subscription_id"], []).append(a)
+        if a.get("status") == "sent":  # a failed send is retried by the next run and does not use up the cap
+            sent_tonight.setdefault(a["subscription_id"], []).append(a)
     base = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000").rstrip("/")
     n = 0
     for sub in store.subscriptions():
@@ -108,8 +110,12 @@ def send_evening_alerts(meta: dict, update: bool = False) -> int:
         if not update and prior:
             continue
         subject, body = render(sub["language"], names[sub["receptor_id"]], ev, f"{base}/api/unsubscribe/{sub['token']}")
-        status = send_email(sub["contact"], subject, body) if sub["channel"] == "email" else "unsupported_channel"
+        try:
+            status = send_email(sub["contact"], subject, body) if sub["channel"] == "email" else "unsupported_channel"
+        except Exception as e:  # one bad address must not stop everyone else's alert
+            log.exception("alert to subscription %s failed", sub["id"])
+            status = f"error {type(e).__name__}"
         store.record_alert(sub["id"], night, meta["run_id"], ev["kind"], status)
-        n += 1
+        n += status == "sent"
     log.info("alerts for run %s (update=%s): %d", meta["run_id"], update, n)
     return n
