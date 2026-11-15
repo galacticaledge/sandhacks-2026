@@ -103,7 +103,8 @@ export function ForecastMap({ overlayUrl, bounds, monitors, sources, complaints,
       if (!mk) {
         const d = document.createElement("div");
         d.className = "mon";
-        mk = new maplibregl.Marker({ element: d }).setLngLat([mon.lon, mon.lat]).addTo(m);
+        // pin tip on the monitor's exact spot, body above it, so it doesn't cover nearby place markers
+        mk = new maplibregl.Marker({ element: d, anchor: "bottom", offset: [0, -6] }).setLngLat([mon.lon, mon.lat]).addTo(m);
         monMarkers.current[mon.site_id] = mk;
       }
       const d = mk.getElement();

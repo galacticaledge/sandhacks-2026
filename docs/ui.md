@@ -103,3 +103,10 @@ Data numbers (stat tiles, monitor ppb, gauge value) and navigation keep their ow
 
 - **Summary card, three sections**: (1) Tonight: "Expected peak level" with the level badge and the orange line, nothing else; (2) Highest forecast: compact gauge (median needle, P90 tick) beside stacked facts for place, peak hour and high estimate, each shown once; (3) Hour by hour: the clickable strip, then the condition chips for the selected hour (wind, temperature, still/mixing air, river flow) and a one-line explanation. On tablets section 3 drops to a full-width row; on phones all three stack.
 - **Map toolbar**: the address search and the filters (risk level, area type) are a header strip inside the map card, directly above the map, instead of a separate bar between the summary and the map. On phones the search is full width and the filter pills scroll sideways.
+
+## Forecast map readability
+
+- Place markers are 28px (32px on hover, 34px with a grape halo when selected) with a readable level symbol.
+- Measured monitor pins are anchored at the bottom: the pointer marks the exact site and the body sits above it, drawn above place markers, so readings are never covered.
+- The risk legend (compact) and a single-row time bar both sit at the bottom-left, at most 560px wide, leaving the river and plume area uncovered. On phones the P50/P90 switch hides and the time bar sits above the map credits.
+- Toolbar filters are compact: a 32px risk dropdown plus one segmented control for All areas, Neighborhoods, Schools and Monitors.

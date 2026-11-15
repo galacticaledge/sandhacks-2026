@@ -183,9 +183,11 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
               </select>
               <Icon name="chevron" size={16} />
             </label>
-            {pills.map(([k, label]) => (
-              <button key={k} className={`pill-btn${kind === k ? " on" : ""}`} aria-pressed={kind === k} onClick={() => setKind(k)}>{label}</button>
-            ))}
+            <div className="seg area-seg" role="group" aria-label={t.all_areas}>
+              {pills.map(([k, label]) => (
+                <button key={k} className={kind === k ? "on" : ""} aria-pressed={kind === k} onClick={() => setKind(k)}>{label}</button>
+              ))}
+            </div>
           </div>
         </div>
         {msg && <p className="warn small search-msg" role="status">{msg}</p>}

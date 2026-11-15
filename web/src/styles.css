@@ -694,3 +694,35 @@ h3, .card h3, .chart-card h3, .detail-head h2, .rank .detail-head h2, .legend-ti
 @media (max-width: 1250px) { .hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 @media (max-width: 640px) { .hero { grid-template-columns: 1fr; } }
 .fc-map.card-xl { background: var(--panel); border-color: var(--card-line); }
+
+/* ---- Forecast map readability: bigger markers, slimmer controls, plume left clear ---- */
+.place { width: 28px; height: 28px; border-width: 2.5px; font-size: 12px; font-weight: 700; z-index: 1;
+  box-shadow: 0 0 0 1px rgba(47, 47, 47, .35), 0 3px 8px rgba(0, 0, 0, .35); transition: width .12s, height .12s, box-shadow .12s; }
+.place:hover { width: 32px; height: 32px; z-index: 4; }
+.place.sel { width: 34px; height: 34px; outline: none; transform: none; z-index: 4;
+  box-shadow: 0 0 0 3px var(--grape), 0 0 0 6px rgba(167, 135, 203, .45), 0 4px 10px rgba(0, 0, 0, .4); }
+.mon { z-index: 3; font-size: 14px; padding: 4px 10px 4px 4px; }
+.mon i { width: 20px; height: 20px; font-size: 9px; }
+
+/* compact filters */
+.tb-pills { align-items: center; gap: 8px; }
+.tb-pills .pill-select select { height: 32px; padding: 0 30px 0 12px; font-size: 12px; }
+.tb-pills .pill-select svg { right: 10px; width: 14px; height: 14px; }
+.area-seg { height: 32px; background: var(--panel-2); border-color: var(--card-line); }
+.area-seg button { padding: 0 12px; font-size: 12px; font-weight: 500; }
+.area-seg button.on { font-weight: 600; }
+.tb-search { height: 40px; }
+
+/* slim time bar and compact legend, both kept bottom-left and out of the plume's way */
+.fc-map-body .slider-bar { left: 10px; right: auto; bottom: 10px; width: min(560px, calc(100% - 20px)); padding: 6px 8px 6px 14px; gap: 12px; flex-wrap: nowrap; border-radius: 14px; }
+.fc-map-body .slider-col { flex-direction: row; align-items: center; gap: 12px; min-width: 0; }
+.fc-map-body .slider-time { flex: none; font-size: 12px; min-width: 64px; }
+.fc-map-body .slider-bar .seg button { padding: 5px 10px; font-size: 12px; }
+.fc-map-body .map-legend { left: 10px; bottom: 62px; gap: 8px; padding: 5px 10px; font-size: 12px; font-weight: 500; }
+.fc-map-body .map-legend i { width: 14px; height: 14px; border-radius: 4px; font-size: 7px; }
+@media (max-width: 760px) {
+  .fc-map-body .slider-bar { width: calc(100% - 16px); left: 8px; bottom: 8px; }
+  .fc-map-body .slider-bar .seg { display: none; }
+  .area-seg { flex: none; }
+}
+@media (max-width: 760px) { .fc-map-body .slider-bar { bottom: 54px; z-index: 3; } }
