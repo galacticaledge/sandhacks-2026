@@ -98,3 +98,8 @@ Data numbers (stat tiles, monitor ppb, gauge value) and navigation keep their ow
   - "measured" (default): solid graphite pin with a white border and pointer, a level-shaped dot and the ppb.
   - "forecast": translucent lavender, dashed grape border, italic, "≈" before the value. The Replay "Forecast (5 PM)" map uses this.
 - **Right panel**, same order: Any location (search + spot forecast), Monitors (measured), Conditions. Every card shares `PanelHead`: a Stone Brown icon tile, a 15px title and Grey Olive meta text. Tiles use a stone tint, and lavender stays for interactive and highlighted states.
+
+## Forecast page (current layout)
+
+- **Summary card, three sections**: (1) Tonight: "Expected peak level" with the level badge and the orange line, nothing else; (2) Highest forecast: compact gauge (median needle, P90 tick) beside stacked facts for place, peak hour and high estimate, each shown once; (3) Hour by hour: the clickable strip, then the condition chips for the selected hour (wind, temperature, still/mixing air, river flow) and a one-line explanation. On tablets section 3 drops to a full-width row; on phones all three stack.
+- **Map toolbar**: the address search and the filters (risk level, area type) are a header strip inside the map card, directly above the map, instead of a separate bar between the summary and the map. On phones the search is full width and the filter pills scroll sideways.

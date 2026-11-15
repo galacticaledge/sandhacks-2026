@@ -1,7 +1,7 @@
 // Spanish strings: HUMAN review by a fluent speaker pending (spec 7).
 const en = {
   tagline: "A weather forecast for sewer gas",
-  hero_expect: "Expected peak level:", hero_highest: "Highest forecast:", strip_note: "Highest median across all places, by hour. Click a bar to show that hour on the map.",
+  hero_expect: "Expected peak level", hero_highest: "Highest forecast", strip_note: "Each bar is the highest median across all places that hour. Click one to see it on the map.",
   cond_at: "Conditions at", air_still: "Still air", air_mixing: "Mixing air",
   search_short: "Search an address", from_dir: "from", gas_pools: "gas pools", model_details: "Model details", map_key: "Map key", conditions: "Conditions",
   menu: "Menu", monitors_now: "Monitors now (ppb)", stale: "Readings are more than 90 minutes old",
@@ -14,7 +14,7 @@ const en = {
   about_link: "How Smellcast works, data sources and limitations", run_note: "List: tonight's 5 PM run. Map and chart: latest run.",
   nav_map: "Forecast map", nav_tonight: "Tonight", nav_replay: "Replay", nav_accuracy: "Accuracy", nav_alerts: "Alerts", nav_about: "About",
   disclaimer: "Experimental forecast, not an official advisory.",
-  disclaimer_short: "Experimental, not official.", strip_yes: "Yes", strip_no: "No", forecast_word: "Forecast", key_forecast: "Forecast (shaded)", key_measured: "Measured by monitor", panel_location: "Any location", replay_monitors_h: "Forecast vs. monitor readings", bar_readings: "SDAPCD readings", bar_alerts: "Official alerts",
+  disclaimer_short: "Experimental, not official.", hour_by_hour: "Hour by hour", filters: "Filters", strip_yes: "Yes", strip_no: "No", forecast_word: "Forecast", key_forecast: "Forecast (shaded)", key_measured: "Measured by monitor", panel_location: "Any location", replay_monitors_h: "Forecast vs. monitor readings", bar_readings: "SDAPCD readings", bar_alerts: "Official alerts",
   official_link: "Official readings and advisories: SDAPCD",
   official_signup: "Sign up for official SDAPCD alerts",
   credits_data: "Live H₂S data: UCSD Resilient Shield and the San Diego County Air Pollution Control District (SDAPCD).",
@@ -140,7 +140,7 @@ export type Strings = typeof en;
 
 const es: Strings = {
   tagline: "Un pronóstico del tiempo para el gas de drenaje",
-  hero_expect: "Nivel pico esperado:", hero_highest: "Pronóstico más alto:", strip_note: "Mediana más alta entre todos los lugares, por hora. Haga clic en una barra para verla en el mapa.",
+  hero_expect: "Nivel pico esperado", hero_highest: "Pronóstico más alto", strip_note: "Cada barra es la mediana más alta entre todos los lugares a esa hora. Haga clic para verla en el mapa.",
   cond_at: "Condiciones a las", air_still: "Aire quieto", air_mixing: "Aire en mezcla",
   search_short: "Buscar una dirección", from_dir: "desde", gas_pools: "el gas se acumula", model_details: "Detalles del modelo", map_key: "Clave del mapa", conditions: "Condiciones",
   menu: "Menú", monitors_now: "Monitores ahora (ppb)", stale: "Las lecturas tienen más de 90 minutos",
@@ -153,7 +153,7 @@ const es: Strings = {
   about_link: "Cómo funciona Smellcast, fuentes de datos y limitaciones", run_note: "Lista: corrida de las 5 PM. Mapa y gráfica: última corrida.",
   nav_map: "Mapa del pronóstico", nav_tonight: "Esta noche", nav_replay: "Repetición", nav_accuracy: "Precisión", nav_alerts: "Alertas", nav_about: "Acerca de",
   disclaimer: "Pronóstico experimental, no es un aviso oficial.",
-  disclaimer_short: "Experimental, no oficial.", strip_yes: "Sí", strip_no: "No", forecast_word: "Pronóstico", key_forecast: "Pronóstico (sombreado)", key_measured: "Medido por monitor", panel_location: "Cualquier lugar", replay_monitors_h: "Pronóstico vs. lecturas de los monitores", bar_readings: "Lecturas SDAPCD", bar_alerts: "Alertas oficiales",
+  disclaimer_short: "Experimental, no oficial.", hour_by_hour: "Hora por hora", filters: "Filtros", strip_yes: "Sí", strip_no: "No", forecast_word: "Pronóstico", key_forecast: "Pronóstico (sombreado)", key_measured: "Medido por monitor", panel_location: "Cualquier lugar", replay_monitors_h: "Pronóstico vs. lecturas de los monitores", bar_readings: "Lecturas SDAPCD", bar_alerts: "Alertas oficiales",
   official_link: "Lecturas y avisos oficiales: SDAPCD",
   official_signup: "Suscríbase a las alertas oficiales del SDAPCD",
   credits_data: "Datos de H₂S en vivo: UCSD Resilient Shield y el Distrito de Control de la Contaminación del Aire del Condado de San Diego (SDAPCD).",

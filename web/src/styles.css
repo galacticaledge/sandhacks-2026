@@ -636,3 +636,61 @@ h3, .card h3, .chart-card h3, .detail-head h2, .rank .detail-head h2, .legend-ti
 .side .tile, .replay-alert ~ .grid2 .tile { background: var(--stone-a); }
 .side .tile-hi { background: rgba(167, 135, 203, .16); border-color: rgba(167, 135, 203, .5); }
 .tile-k, .fold dt { color: var(--olive); }
+
+/* ---- Forecast summary card: three sections (verdict | highest forecast | hour by hour) ---- */
+.hero { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr) minmax(0, 1.5fr); gap: 0; padding: 0; align-items: stretch; border-color: var(--card-line); }
+.hero-sec { padding: 18px 22px; display: flex; flex-direction: column; gap: 8px; min-width: 0; position: relative; z-index: 1; }
+.hero-sec + .hero-sec { border-left: 1px solid var(--card-line); }
+.hero .eyebrow { color: var(--olive); font-size: 12px; }
+.hero-verdict { background: linear-gradient(135deg, rgba(93, 74, 114, .45), transparent 85%); }
+[data-theme="light"] .hero-verdict { background: linear-gradient(135deg, rgba(167, 135, 203, .25), transparent 85%); }
+.hero-verdict h1 { margin: 2px 0 0; font-size: 28px; }
+.hero-verdict .hero-level { align-self: flex-start; font-size: 22px; padding: 2px 14px; border-radius: 12px; text-transform: uppercase; letter-spacing: .02em; }
+.hero-verdict .hero-orange { margin: 4px 0 0 !important; font-size: 14px; font-weight: 400; color: var(--muted); }
+.peak-body { display: flex; align-items: center; gap: 16px; flex: 1; }
+.gauge-compact svg { width: 130px; }
+.gauge-compact figcaption strong { font-size: 22px; }
+.peak-facts { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; align-content: center; min-width: 0; }
+.peak-facts dt { font-size: 12px; color: var(--olive); }
+.peak-facts dd { margin: 0; font-size: 14px; min-width: 0; overflow-wrap: anywhere; }
+.peak-facts dd strong { font-weight: 600; }
+.hero-hours .hstrip-bars { height: 52px; }
+.hero-hours .conds { margin: 4px 0 0; gap: 6px; }
+.conds-time { font-size: 12px; font-weight: 600; color: var(--lavender); margin-right: 2px; }
+[data-theme="light"] .conds-time { color: var(--grape); }
+.hero-hours .cond { font-size: 12px; padding: 3px 9px; }
+.hero-hours > small { font-size: 12px; }
+@media (max-width: 1250px) { .hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .hero-hours { grid-column: 1 / -1; border-left: 0 !important; border-top: 1px solid var(--card-line); } }
+@media (max-width: 640px) { .hero { grid-template-columns: 1fr; } .hero-sec + .hero-sec { border-left: 0; border-top: 1px solid var(--card-line); } .peak-body { gap: 10px; } }
+
+/* ---- Forecast: search + filters as the map's toolbar ---- */
+.fc-map { display: flex; flex-direction: column; height: auto; min-height: 0; overflow: hidden; }
+.map-toolbar { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; padding: 10px; border-bottom: 1px solid var(--card-line);
+  background: linear-gradient(180deg, rgba(92, 85, 82, .25), transparent); }
+[data-theme="light"] .map-toolbar { background: linear-gradient(180deg, rgba(92, 85, 82, .07), transparent); }
+.tb-search { flex: 1 1 340px; max-width: 520px; height: 44px; border-radius: 14px; padding: 4px 4px 4px 0; }
+.tb-search .fc-input, .tb-search .fc-input:hover, .tb-search .fc-input:focus-within { padding: 0 6px 0 12px; }
+.tb-search .fc-input input { font-size: 14px; }
+.tb-search .btn-grape { padding: 0 16px; border-radius: 11px; font-size: 14px; }
+.pills.tb-pills { position: static; width: auto; right: auto; left: auto; top: auto; flex: 0 1 auto; flex-wrap: wrap; gap: 6px; padding: 0;
+  background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; border-radius: 0; }
+.tb-pills .pill-btn { border-color: var(--card-line); color: var(--ink); padding: 8px 14px; font-size: 12px; font-weight: 600; }
+.tb-pills .pill-btn.on { color: #fff; }
+.tb-pills .pill-select select { padding: 8px 32px 8px 14px; font-size: 12px; }
+.fc-map .search-msg { margin: 8px 12px 0; }
+.fc-map-body { position: relative; height: min(62vh, 600px); min-height: 420px; margin: 10px; border-radius: 14px; overflow: hidden; background: #e8e6e3; }
+.fc-map-body .map-wrap { position: absolute; inset: 0; height: 100% !important; }
+@media (max-width: 760px) {
+  .tb-search { flex: 1 1 100%; max-width: none; height: 46px; }
+  .pills.tb-pills { flex-wrap: nowrap; overflow-x: auto; width: 100%; scrollbar-width: none; }
+  .fc-map-body { height: 58vh; margin: 8px; }
+}
+
+/* ---- Forecast summary: highest-forecast facts stack label over value ---- */
+.hero { grid-template-columns: minmax(0, .9fr) minmax(320px, 1.1fr) minmax(0, 1.4fr); }
+.peak-facts { grid-template-columns: 1fr; gap: 8px; }
+.peak-facts dt { margin: 0; line-height: 1.2; }
+.peak-facts dd { margin: -6px 0 0; line-height: 1.35; }
+@media (max-width: 1250px) { .hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 640px) { .hero { grid-template-columns: 1fr; } }
+.fc-map.card-xl { background: var(--panel); border-color: var(--card-line); }
