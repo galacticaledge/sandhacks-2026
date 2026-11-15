@@ -37,7 +37,7 @@ import os
 import time
 from datetime import datetime, timedelta, timezone
 
-from config import DATA_DIR, DEMO_MODE
+from config import DATA_DIR, DEMO_DIR, DEMO_MODE, FORECAST_DIR
 
 log = logging.getLogger("seed")
 UTC = timezone.utc
@@ -122,6 +122,21 @@ def step_replays(n_nights: int) -> str:
     return f"{', '.join(feat['nights'])}; featured {feat['night']} at {feat['receptor_id']}"
 
 
+def step_demo_replays() -> str:
+    """Use the bad-night maps shipped in data/demo/ (committed) instead of computing them: copies the replay runs,
+    the featured-night list and, if none exists yet, the calibration they were made with."""
+    import shutil
+    FORECAST_DIR.mkdir(parents=True, exist_ok=True)
+    n = 0
+    for src in sorted((DEMO_DIR / "forecasts").glob("*-replay")):
+        if not (FORECAST_DIR / src.name).exists():
+            shutil.copytree(src, FORECAST_DIR / src.name); n += 1
+    shutil.copy(DEMO_DIR / "featured_night.json", DATA_DIR / "featured_night.json")
+    if not (DATA_DIR / "calibration.json").exists():
+        shutil.copy(DEMO_DIR / "calibration.json", DATA_DIR / "calibration.json")
+    return f"copied {n} replay maps from data/demo; Replay list = {json.loads((DATA_DIR / 'featured_night.json').read_text()).get('nights')}"
+
+
 def step_reports(n_nights: int) -> str:
     need = ("BRIGHTDATA_API_TOKEN", "BRIGHTDATA_UNLOCKER_ZONE", "GEMINI_API_KEY")
     missing = [k for k in need if not os.getenv(k)]
@@ -149,6 +164,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--skip", nargs="*", default=[], choices=STEPS, metavar="STEP")
     ap.add_argument("--only", nargs="*", default=None, choices=STEPS, metavar="STEP")
     ap.add_argument("--score", action="store_true", help="also replay and score every night (takes hours)")
+    ap.add_argument("--from-demo", action="store_true",
+                    help="fast (~2 min): readings + the 5 bad-night maps shipped in data/demo, no recomputing")
     ap.add_argument("--once", action="store_true", help="do nothing if these steps already finished (data/.seeded.json)")
     a = ap.parse_args(argv)
     if DEMO_MODE:
@@ -157,7 +174,7 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
     a.nights = min(a.nights or SMALL_NIGHTS, SMALL_NIGHTS) if a.small else (a.nights or 5)
-    run = [s for s in (a.only or STEPS) if s not in a.skip]
+    run = [s for s in (a.only or (["history", "complaints", "demo_replays"] if a.from_demo else STEPS)) if s not in a.skip]
     if a.once and set(run) <= done_steps():
         print(f"already seeded ({', '.join(run)}); delete {MARKER} or use SEED=always to seed again")
         return 0
@@ -171,7 +188,7 @@ def main(argv: list[str] | None = None) -> int:
     store.init_db()
     fns = {"history": step_history, "weather": step_weather, "flow": step_flow, "complaints": step_complaints,
            "announcements": step_announcements, "calibrate": step_calibrate,
-           "replays": lambda: step_replays(a.nights), "reports": lambda: step_reports(a.nights)}
+           "replays": lambda: step_replays(a.nights), "demo_replays": step_demo_replays, "reports": lambda: step_reports(a.nights)}
     results, failed = [], 0
     for s in run:
         t = time.time()

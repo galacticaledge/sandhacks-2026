@@ -26,10 +26,10 @@ def start_seed() -> None:
     """SEED=1: seed this database once in the background (scripts/seed.py); SEED=small: same, Replay list capped at 5;
     SEED=always: everything on every start. The API comes up at once; progress goes to logs/seed.log."""
     mode = os.getenv("SEED", "0").strip().lower()
-    if DEMO_MODE or mode not in ("1", "true", "yes", "once", "small", "always"):
+    if DEMO_MODE or mode not in ("1", "true", "yes", "once", "small", "always", "demo"):
         return
     cmd = [sys.executable, "-m", "scripts.seed"] + ([] if mode == "always" else ["--once"])
-    cmd += ["--small"] if mode == "small" else []
+    cmd += ["--small"] if mode == "small" else ["--from-demo"] if mode == "demo" else []
     cmd += shlex.split(os.getenv("SEED_ARGS", ""))
     log = open(LOG_DIR / "seed.log", "a")
     subprocess.Popen(cmd, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)

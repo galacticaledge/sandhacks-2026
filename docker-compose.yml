@@ -21,6 +21,7 @@ services:
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
       # SEED=1: on first start, load history, calibrate and replay the worst nights in the background
       # (scripts/seed.py, log in logs/seed.log). SEED=small: same, with the Replay list capped at the 5 worst nights.
+      # SEED=demo: fast (~2 min), readings + the 5 bad-night maps shipped in data/demo, live site kept.
       # SEED=always reseeds on every start. SEED_ARGS e.g. "--skip reports".
       SEED: ${SEED:-0}
       SEED_ARGS: ${SEED_ARGS:-}
