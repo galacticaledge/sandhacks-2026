@@ -8,6 +8,7 @@ import { TonightStrip } from "../components/TonightStrip";
 import { Icon } from "../components/Icons";
 import { PanelHead } from "../components/PanelHead";
 import { ZoneLegend } from "../components/ZoneLegend";
+import { PlayButton, usePlayback, usePrefetchZones } from "../playback";
 import { LEVELS, fmtPpb, fmtTime, levelOf, levelStyle } from "../levels";
 import type { Lang, Strings } from "../i18n";
 
@@ -17,7 +18,6 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
   const [meta, setMeta] = useState<Meta | null>(null);
   const [hour, setHour] = useState(0);
   const [pct, setPct] = useState<"p50" | "p90">("p50");
-  const [playing, setPlaying] = useState(false);
   const [complaints, setComplaints] = useState<{ lat: number; lon: number }[]>([]);
   const [point, setPoint] = useState<Point | null>(null);
   const [pickErr, setPickErr] = useState<string | null>(null);
@@ -34,17 +34,8 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
     get<{ lat: number; lon: number }[]>("/api/complaints?days=7").then(setComplaints).catch(() => {});
   }, [now?.latest_run_id]);
 
-  useEffect(() => {
-    if (!playing || !meta) return;
-    const id = setInterval(() => setHour((h) => (h + 1) % meta.valid_times.length), 700);
-    return () => clearInterval(id);
-  }, [playing, meta]);
-
-  // warm the browser cache with every hour's zones so the slider and Play are smooth
-  useEffect(() => {
-    if (!meta) return;
-    meta.valid_times.forEach((_, h) => { fetch(`/api/forecast/${meta.run_id}/zones/${h}.geojson?pct=${pct}`).catch(() => {}); });
-  }, [meta, pct]);
+  const [playing, setPlaying] = usePlayback(meta?.valid_times.length ?? 0, setHour, meta?.run_id);
+  usePrefetchZones(meta?.run_id, meta?.valid_times.length ?? 0, pct);
 
   const pickAt = async (lat: number, lon: number) => {
     setPickErr(null);
@@ -90,9 +81,7 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
         <footer className="map-foot">
           {meta && (
             <div className="play-row">
-              <button className="play-btn" onClick={() => setPlaying(!playing)} aria-pressed={playing} aria-label={playing ? t.pause : t.play}>
-                {playing ? "❚❚" : "▶"}
-              </button>
+              <PlayButton playing={playing} setPlaying={setPlaying} t={t} />
               <div className="slider-col">
                 <label htmlFor="hour" className="slider-time">{vt && fmtTime(vt, lang, true)}</label>
                 <input id="hour" type="range" min={0} max={meta.valid_times.length - 1} value={hour}

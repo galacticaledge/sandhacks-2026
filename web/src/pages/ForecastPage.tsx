@@ -7,6 +7,7 @@ import { LevelBadge } from "../components/LevelBadge";
 import { PointChart } from "../components/PointChart";
 import { Spark } from "../components/Spark";
 import { ZoneLegend } from "../components/ZoneLegend";
+import { PlayButton, usePlayback, usePrefetchZones } from "../playback";
 import { LEVELS, fmtPpb, fmtTime, levelOf, levelStyle } from "../levels";
 import type { Lang, Strings } from "../i18n";
 
@@ -41,6 +42,8 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
       setHour(i > 0 ? i : 0);
     });
   }, [now?.latest_run_id]);
+  const [playing, setPlaying] = usePlayback(meta?.valid_times.length ?? 0, setHour, meta?.run_id);
+  usePrefetchZones(meta?.run_id, meta?.valid_times.length ?? 0, pct);
   useEffect(() => { get<Tonight>(`/api/tonight?lang=${lang}`).then(setTonight).catch(() => setTonight(null)); }, [lang]);
 
   const items = useMemo(() => (tonight?.items ?? []).filter((r) =>
@@ -146,7 +149,7 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
                   {regionMax.map((v, h) => {
                     const l = levelStyle(levelOf(v));
                     return (
-                      <button key={h} className={`bar${h === hour ? " on" : ""}`} onClick={() => setHour(h)}
+                      <button key={h} className={`bar${h === hour ? " on" : ""}`} onClick={() => { setPlaying(false); setHour(h); }}
                         title={`${fmtTime(meta.valid_times[h], lang, true)}: ${fmtPpb(v)} ppb`} aria-label={`${fmtTime(meta.valid_times[h], lang, true)}: ${fmtPpb(v)} ppb`}>
                         <span style={{ height: `${18 + 82 * Math.min(1, v / stripTop)}%`, background: l?.color }} />
                       </button>
@@ -228,9 +231,10 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
         <ZoneLegend t={t} pct={pct} measured className="map-legend" />
         {meta && (
           <div className="slider-bar">
+            <PlayButton playing={playing} setPlaying={setPlaying} t={t} />
             <div className="slider-col">
               <label htmlFor="fh" className="slider-time">{vt && fmtTime(vt, lang, true)}</label>
-              <input id="fh" type="range" min={0} max={meta.valid_times.length - 1} value={hour} onChange={(e) => setHour(+e.target.value)} />
+              <input id="fh" type="range" min={0} max={meta.valid_times.length - 1} value={hour} onChange={(e) => { setPlaying(false); setHour(+e.target.value); }} />
             </div>
             <div className="seg" role="group" aria-label={t.show}>
               <button className={pct === "p50" ? "on" : ""} onClick={() => setPct("p50")}>{t.median}</button>

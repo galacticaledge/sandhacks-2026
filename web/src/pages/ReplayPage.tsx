@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { get, type Meta, type Receptor, type Series } from "../api";
 import { ForecastMap } from "../components/ForecastMap";
+import { PlayButton, usePlayback, usePrefetchZones } from "../playback";
 import { InputsCard } from "../components/InputsCard";
 import { PointChart } from "../components/PointChart";
 import { Reports } from "../components/Reports";
@@ -108,6 +109,9 @@ export function ReplayPage({ t, lang }: { t: Strings; lang: Lang }) {
       .finally(() => setLoading(false));
   }, [night]);
 
+  const [playing, setPlaying] = usePlayback(rep?.valid_times.length ?? 0, setHour, rep?.run_id);
+  usePrefetchZones(rep?.has_grid ? rep.run_id : null, rep?.valid_times.length ?? 0, "p50");
+
   const cur = nights.find((n) => n.night === night);
   const recId = rec ?? (cur?.featured ? cur.receptor_id : null) ?? rep?.default_receptor_id ?? null;
   const fcMon = rep ? MON.map((m) => ({ ...m, ppb: rep.forecast[m.site_id]?.p50[hour] ?? null })) : [];
@@ -147,9 +151,10 @@ export function ReplayPage({ t, lang }: { t: Strings; lang: Lang }) {
             <p className="muted small">{t.alert_preview_note}</p>
           </section>
           <div className="slider-bar static">
+            <PlayButton playing={playing} setPlaying={setPlaying} t={t} />
             <div className="slider-col">
               <label htmlFor="rh" className="slider-time">{fmtTime(rep.valid_times[hour], lang, true)}</label>
-              <input id="rh" type="range" min={0} max={rep.valid_times.length - 1} value={hour} onChange={(e) => setHour(+e.target.value)} />
+              <input id="rh" type="range" min={0} max={rep.valid_times.length - 1} value={hour} onChange={(e) => { setPlaying(false); setHour(+e.target.value); }} />
             </div>
           </div>
           {rep.has_grid ? (
