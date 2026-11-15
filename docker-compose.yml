@@ -27,6 +27,8 @@ services:
       SEED_ARGS: ${SEED_ARGS:-}
       # After seeding, the Replay list shows only the seeded bad nights; REPLAY_LIST=all shows every night.
       REPLAY_LIST: ${REPLAY_LIST:-seeded}
+      # On start, install the 5 bad-night replays shipped in data/demo (no data is removed). 0 = off.
+      DEMO_REPLAYS: ${DEMO_REPLAYS:-1}
     ports:
       - "8000:8000"
     volumes:

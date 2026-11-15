@@ -39,6 +39,12 @@ def start_seed() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    if not DEMO_MODE and os.getenv("DEMO_REPLAYS", "1") == "1":
+        try:   # the 5 bad-night replays shipped in data/demo: Replay lists only these (REPLAY_LIST=all: every night)
+            from scripts.seed import step_demo_replays
+            logging.getLogger("seed").info("demo replays: %s", step_demo_replays())
+        except Exception:
+            logging.getLogger("seed").exception("could not install the demo replays")
     start_seed()
     sched = None
     if not DEMO_MODE and os.getenv("SCHEDULER", "1") == "1":
