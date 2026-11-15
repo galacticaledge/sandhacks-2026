@@ -12,6 +12,7 @@ python -m validate.replay --score    # only rescore existing replays
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from datetime import date, datetime, timedelta, timezone
@@ -62,17 +63,31 @@ def replay_run_id(night: date) -> str:
     return issue_time(night).astimezone(UTC).strftime("%Y%m%dT%H%MZ") + "-replay"
 
 
+def calibration_key(cal: dict | None) -> str | None:
+    """Fingerprint of the fitted parameters (not of when they were fitted), so a cached replay is reused only
+    if it was made with the calibration that is current now."""
+    if not cal:
+        return None
+    core = {k: v for k, v in cal.items() if k not in ("fitted_at", "window")}
+    return hashlib.sha1(json.dumps(core, sort_keys=True, default=str).encode()).hexdigest()[:12]
+
+
+def is_current(meta: dict, key: str | None) -> bool:
+    return calibration_key(meta.get("inputs", {}).get("calibration")) == key
+
+
 def replay_night(night: date, grid: bool = False, force: bool = False, params=None) -> dict:
     issued = issue_time(night)
     rid = replay_run_id(night)
     meta_path = FORECAST_DIR / rid / "meta.json"
+    params = params or current_params()
     if meta_path.exists() and not force:
         meta = json.loads(meta_path.read_text())
-        if meta.get("grid") or not grid:
+        if (meta.get("grid") or not grid) and is_current(meta, calibration_key(params[2])):
             return meta
     backfill_weather(issued - timedelta(days=3), issued + timedelta(days=2))
     return run_forecast(issued, scenario="replay", weather="observed", n_members=REPLAY_MEMBERS, grid=grid,
-                        params=params or current_params())
+                        params=params)
 
 
 def _night_fc(meta: dict, night: date, q: str = "p50") -> np.ndarray:
@@ -105,10 +120,28 @@ def leave_one_monitor_out() -> dict:
     return out
 
 
+SPATIAL_MIN_LOCATIONS = 20   # fewer distinct complaint locations than this: too few to report a number
+
+
+def placeholder_points(rows: list[dict]) -> set[tuple[float, float]]:
+    """Coordinates that stand for a city, not an address: the same exact point is used by complaints filed under
+    different city names. In the SDAPCD records one such point carries ~90% of all odor complaints."""
+    cities: dict[tuple[float, float], set[str]] = {}
+    for c in rows:
+        cities.setdefault((round(c["lat"], 4), round(c["lon"], 4)), set()).add((c.get("city") or "").strip().lower())
+    return {pt for pt, cs in cities.items() if len(cs) > 1}
+
+
 def spatial_check(run_ids: list[str]) -> dict:
-    """Do odor complaints land in the forecast high-concentration area more often than chance?"""
+    """Do odor complaints land in the forecast high-concentration area more often than chance?
+
+    Each complaint's percentile within the P50 field for its hour, so only the field's shape matters. Only
+    complaints with a street-level location count (placeholder city points are dropped), and each location
+    counts once per run, so one household calling every hour does not dominate.
+    """
     g = make_grid()
-    pct, n = [], 0
+    placeholders = placeholder_points(store.complaints(datetime(2000, 1, 1, tzinfo=UTC), datetime.now(UTC)))
+    pct, runs, locs, dropped, seen = [], set(), set(), 0, set()
     for rid in run_ids:
         d = FORECAST_DIR / rid
         if not (d / "p50.npy").exists():
@@ -120,15 +153,23 @@ def spatial_check(run_ids: list[str]) -> dict:
             ij = g.index_of(c["lat"], c["lon"])
             if ij is None:
                 continue
-            h = int((c["received_at"].replace(minute=0, second=0) - vt[0]).total_seconds() // 3600)
-            if not 0 <= h < len(vt):
+            pt = (round(c["lat"], 4), round(c["lon"], 4))
+            if pt in placeholders:
+                dropped += 1
                 continue
+            h = int((c["received_at"].replace(minute=0, second=0) - vt[0]).total_seconds() // 3600)
+            if not 0 <= h < len(vt) or (rid, pt) in seen:
+                continue
+            seen.add((rid, pt))
             field = np.asarray(p50[h], dtype=float)
-            pct.append(float((field < field[ij]).mean())); n += 1
-    if not pct:
-        return {"n_complaints": 0}
-    top20 = float(np.mean(np.array(pct) >= 0.8))
-    return {"n_complaints": n, "mean_percentile": float(np.mean(pct)), "share_in_top20pct_area": top20,
+            pct.append(float((field < field[ij]).mean())); runs.add(rid); locs.add(pt)
+    out = {"n_complaints": len(pct), "n_locations": len(locs), "n_runs": len(runs), "n_placeholder_dropped": dropped,
+           "min_locations": SPATIAL_MIN_LOCATIONS,
+           "note": "street-level complaint locations only; complaint hour vs that hour's forecast field"}
+    if len(locs) < SPATIAL_MIN_LOCATIONS:
+        return {**out, "n_complaints": 0, "n_found": len(pct),
+                "note": "not enough complaints with a street-level location inside mapped forecast nights"}
+    return {**out, "mean_percentile": float(np.mean(pct)), "share_in_top20pct_area": float(np.mean(np.array(pct) >= 0.8)),
             "chance_share": 0.2}
 
 
@@ -160,12 +201,17 @@ def _period_scores(obs, fc, p90, prev, sel, sites) -> dict:
 def score_all() -> dict:
     nights = available_nights()
     sites = [m.site_id for m in MONITORS]
+    key = calibration_key(current_params()[2])
+    stale = 0
     scored, rows_obs, rows_fc, rows_p90, rows_prev, detail = [], [], {"model": [], "persistence": [], "climatology": []}, [], [], []
     for night in nights:
         rid = replay_run_id(night)
         if not (FORECAST_DIR / rid / "meta.json").exists():
             continue
         meta = json.loads((FORECAST_DIR / rid / "meta.json").read_text())
+        if not is_current(meta, key):   # made with another calibration: scoring it would mix two models
+            stale += 1
+            continue
         nt = night_hours(night)
         obs = observations(nt)
         pers = baselines.persistence(nt)
@@ -183,7 +229,8 @@ def score_all() -> dict:
     a, b, n = store.reading_range()
     result = {"computed_at": datetime.now(UTC).isoformat(), "nights": [d.isoformat() for d in nights],
               "history": {"start": a.isoformat() if a else None, "end": b.isoformat() if b else None, "hours": n},
-              "label": "with observed weather (flatters real forecast skill)", "summary": {}, "detail": detail}
+              "label": "with observed weather (flatters real forecast skill)", "summary": {}, "detail": detail,
+              "n_scored": len(scored), "n_skipped_other_calibration": stale, "held_out_from": hindcast.TUNE_END.isoformat()}
     if scored:
         obs = np.array(rows_obs); fc = {k: np.array(v) for k, v in rows_fc.items()}
         p90 = np.array(rows_p90); prev = np.array(rows_prev)
@@ -218,7 +265,8 @@ def score_all() -> dict:
                        "physics": {k: cal.get(k) for k in ("log_k", "alpha", "beta", "shares", "background", "q_dil_mgd", "dil_gamma", "sigma_v_ms")},
                        "correction": cal.get("blend")}
     result["leave_one_monitor_out"] = leave_one_monitor_out()
-    result["spatial"] = {"n_complaints": 0, "note": "not computed: most complaint records share one coordinate"}
+    result["spatial"] = spatial_check([p.name for p in FORECAST_DIR.glob("*-replay")
+                                       if (p / "p50.npy").exists() and is_current(json.loads((p / "meta.json").read_text()), key)])
     SKILL_PATH.write_text(json.dumps(result, indent=1))
     return result
 

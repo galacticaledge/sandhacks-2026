@@ -67,8 +67,13 @@ the monitor's own readings, so it is not a fair street-level comparison; it is s
   is over-forecast (77% false alarms).
 - Fitted parameters to review: temperature factor β ≈ 0 (no temperature effect found) and storm-water dilution
   exponent `dil_gamma` = 4.0, at its upper bound.
-- Spatial check (odor complaints inside the forecast high area): **not computed**, because most complaint records
-  share one coordinate.
+- Spatial check (odor complaints inside the forecast high area): only complaints with a street-level location count.
+  ~91% of SDAPCD odor complaints (4,878 of 5,350) sit on one placeholder point used for several cities, and another
+  88 on a second one; these are dropped (`replay.placeholder_points`). Each location counts once per night. The page
+  shows a number only with ≥ 20 distinct locations inside mapped replay nights; today there are 4, so it says so.
+- Replays are cached per night. A cached replay counts only if it was made with the current calibration
+  (`replay.calibration_key`); otherwise it is recomputed, or left out of the scores and counted in
+  `n_skipped_other_calibration`.
 - All of this uses observed weather. A replay with archived NWS forecasts would measure true forecast skill.
 
 ## Gemini spot-check [HUMAN, 15 min]
