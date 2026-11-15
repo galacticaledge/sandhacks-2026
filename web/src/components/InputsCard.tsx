@@ -1,6 +1,7 @@
 import type { Meta } from "../api";
 import type { Strings } from "../i18n";
 import { Icon } from "./Icons";
+import { PanelHead } from "./PanelHead";
 
 // Model inputs at one forecast hour, as a 2x2 tile grid; calibration details fold away.
 // Used by the Live Map page (latest run) and the Replay page (replayed run).
@@ -12,7 +13,7 @@ export function InputsCard({ inputs, hour, t, title }: { inputs: Meta["inputs"];
   const dir = met.wind_dir_deg[hour] ?? 0;
   return (
     <section className="panel">
-      <h3 className="panel-h">{title ?? t.inputs}</h3>
+      <PanelHead icon="wave" title={title ?? t.inputs} />
       <div className="tiles">
         <div className="tile">
           <span className="tile-k"><span className="wind-arrow" style={{ transform: `rotate(${dir + 180}deg)` }}><Icon name="arrow" size={14} /></span>{t.wind}</span>

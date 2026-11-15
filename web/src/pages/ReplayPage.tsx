@@ -153,7 +153,7 @@ export function ReplayPage({ t, lang }: { t: Strings; lang: Lang }) {
           </div>
           {rep.has_grid ? (
             <div className="split">
-              <ForecastMap height={380} label={`${t.forecast} (${fmtTime(rep.issued_at, lang)})`} overlayUrl={bounds ? `/api/forecast/${rep.run_id}/grid/${hour}.png?pct=p50` : null} bounds={bounds} monitors={fcMon} />
+              <ForecastMap height={380} label={`${t.forecast} (${fmtTime(rep.issued_at, lang)})`} overlayUrl={bounds ? `/api/forecast/${rep.run_id}/grid/${hour}.png?pct=p50` : null} bounds={bounds} monitors={fcMon} monitorKind="forecast" />
               <ForecastMap height={380} label={t.observed} overlayUrl={null} bounds={null} monitors={obsMon} />
             </div>
           ) : <p className="muted">{t.replay_no_map}</p>}

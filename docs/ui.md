@@ -88,3 +88,13 @@ Data numbers (stat tiles, monitor ppb, gauge value) and navigation keep their ow
 ## Dropdowns
 
 `components/Select.tsx`: a listbox that always opens directly below its button (max 320px, scrolls, and scrolls the page into view on small screens). Keyboard: arrows, Home/End, Enter/Space, Escape, type-ahead. Used for Replay's "Night of" and "Show the alert for". Classes use the `dd-` prefix (`.sel` is the selected map marker).
+
+## Live Map (current layout)
+
+- **Summary** (`TonightStrip`), three sections: (1) "Orange tonight?" with a big Yes/No and the likely/possible count; (2) highest forecast place with level, median ppb, time and P90; (3) actions (Tonight list, past spike) and the "low is not safe" note. Same rules as before: places only, worst level first.
+- **Map card**: the map sits inset with a "Forecast · time · P50/P90" tag. The basemap is faded (fill 0.55, lines 0.5, labels 0.7) on every map so the forecast and readings stand out. Zoom buttons are small, dark and tucked into the corner.
+- **Controls under the map, two layers**: (1) playback (round play button, time, slider, P50/P90); (2) key: shaded forecast ramp with 0/5/30/200 ppb, the measured-pin sample, river sources and complaints.
+- **Measured vs forecast markers** (`ForecastMap monitorKind`):
+  - "measured" (default): solid graphite pin with a white border and pointer, a level-shaped dot and the ppb.
+  - "forecast": translucent lavender, dashed grape border, italic, "≈" before the value. The Replay "Forecast (5 PM)" map uses this.
+- **Right panel**, same order: Any location (search + spot forecast), Monitors (measured), Conditions. Every card shares `PanelHead`: a Stone Brown icon tile, a 15px title and Grey Olive meta text. Tiles use a stone tint, and lavender stays for interactive and highlighted states.

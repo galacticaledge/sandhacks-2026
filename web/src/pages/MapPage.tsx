@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { get, type Meta, type Now } from "../api";
 import { ForecastMap, type MapSource } from "../components/ForecastMap";
 import { InputsCard } from "../components/InputsCard";
-import { Legend } from "../components/Legend";
 import { LevelBadge } from "../components/LevelBadge";
 import { PointChart } from "../components/PointChart";
 import { TonightStrip } from "../components/TonightStrip";
 import { Icon } from "../components/Icons";
+import { PanelHead } from "../components/PanelHead";
 import { LEVELS, fmtPpb, fmtTime, levelOf, levelStyle } from "../levels";
 import type { Lang, Strings } from "../i18n";
 
@@ -71,64 +71,86 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
   return (
     <>
     <TonightStrip t={t} lang={lang} />
-    <div className="map-page">
-      <section className="map-main" aria-label={t.nav_map}>
-        <ForecastMap
-          overlayUrl={meta ? `/api/forecast/${meta.run_id}/grid/${hour}.png?pct=${pct}` : null}
-          bounds={meta?.grid?.bounds ?? null}
-          monitors={monitors}
-          sources={(now as unknown as { sources?: MapSource[] })?.sources}
-          complaints={complaints}
-          marker={point}
-          onPick={pickAt}
-        />
-        <div className="map-legend" aria-hidden="true">
-          {LEVELS.map((l) => (
-            <span key={l.key}><i style={{ background: l.color, color: l.ink }}>{l.icon}</i>{t[`range_${l.key}` as keyof Strings] as string}</span>
-          ))}
+    <div className="map-page live">
+      <section className="map-main live-card" aria-label={t.nav_map}>
+        <div className="live-map">
+          <ForecastMap
+            overlayUrl={meta ? `/api/forecast/${meta.run_id}/grid/${hour}.png?pct=${pct}` : null}
+            bounds={meta?.grid?.bounds ?? null}
+            monitors={monitors}
+            sources={(now as unknown as { sources?: MapSource[] })?.sources}
+            complaints={complaints}
+            marker={point}
+            onPick={pickAt}
+          />
+          {vt && <span className="map-tag"><span>{t.forecast_word}</span>{fmtTime(vt, lang, true)} · {pct === "p50" ? t.median : t.high_est}</span>}
         </div>
-        {meta && (
-          <div className="slider-bar">
-            <button className="btn" onClick={() => setPlaying(!playing)} aria-pressed={playing}>{playing ? "❚❚ " + t.pause : "▶ " + t.play}</button>
-            <div className="slider-col">
-              <label htmlFor="hour" className="slider-time">{vt && fmtTime(vt, lang, true)}</label>
-              <input id="hour" type="range" min={0} max={meta.valid_times.length - 1} value={hour}
-                onChange={(e) => { setPlaying(false); setHour(+e.target.value); }} />
+        <footer className="map-foot">
+          {meta && (
+            <div className="play-row">
+              <button className="play-btn" onClick={() => setPlaying(!playing)} aria-pressed={playing} aria-label={playing ? t.pause : t.play}>
+                {playing ? "❚❚" : "▶"}
+              </button>
+              <div className="slider-col">
+                <label htmlFor="hour" className="slider-time">{vt && fmtTime(vt, lang, true)}</label>
+                <input id="hour" type="range" min={0} max={meta.valid_times.length - 1} value={hour}
+                  onChange={(e) => { setPlaying(false); setHour(+e.target.value); }} />
+              </div>
+              <div className="seg" role="group" aria-label={t.show}>
+                <button className={pct === "p50" ? "on" : ""} onClick={() => setPct("p50")}>{t.median}</button>
+                <button className={pct === "p90" ? "on" : ""} onClick={() => setPct("p90")}>{t.high_est}</button>
+              </div>
             </div>
-            <div className="seg" role="group" aria-label={t.show}>
-              <button className={pct === "p50" ? "on" : ""} onClick={() => setPct("p50")}>{t.median}</button>
-              <button className={pct === "p90" ? "on" : ""} onClick={() => setPct("p90")}>{t.high_est}</button>
+          )}
+          <div className="key-row">
+            <div className="key-group">
+              <span className="key-k">{t.key_forecast}</span>
+              <span className="key-ramp" aria-hidden="true">{LEVELS.map((l) => <i key={l.key} style={{ background: l.color }} />)}</span>
+              <span className="key-ticks">{LEVELS.map((l) => <span key={l.key}>{l.min}</span>)}<span>ppb</span></span>
+            </div>
+            <div className="key-group">
+              <span className="key-k">{t.key_measured}</span>
+              <span className="mon mon-meas inline"><i style={{ background: LEVELS[0].color, color: LEVELS[0].ink }}>{LEVELS[0].icon}</i><b>0.7</b><small>ppb</small></span>
+            </div>
+            <div className="key-group key-sources">
+              <span><span className="src src-main inline">☣</span>{t.hotspot}</span>
+              <span><span className="src inline" />{t.sources}</span>
+              <span><span className="dot inline" />{t.complaints}</span>
             </div>
           </div>
-        )}
+        </footer>
       </section>
+
       <aside className="side">
-        <form className="fc-search side-search" onSubmit={search} role="search">
-          <label className="fc-input">
-            <Icon name="search" size={18} />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.search_short} aria-label={t.search_placeholder} />
-          </label>
-          <button className="btn-grape">{t.search}</button>
-        </form>
-        {pickErr && <p className="warn small">{pickErr}</p>}
-        {point ? (
-          <section className="panel">
-            <div className="panel-row">
-              <h3 className="panel-h">{t.point_title}</h3>
-              <button className="link small" onClick={() => setPoint(null)}>{t.close}</button>
-            </div>
-            <div className="badges">
-              <span><span className="muted small">P50</span> <LevelBadge level={levelOf(Math.max(...point.p50))} t={t} small /> <strong>{fmtPpb(Math.max(...point.p50))}</strong> <span className="muted small">ppb</span></span>
-              <span><span className="muted small">P90</span> <LevelBadge level={levelOf(Math.max(...point.p90))} t={t} small /> <strong>{fmtPpb(Math.max(...point.p90))}</strong> <span className="muted small">ppb</span></span>
-            </div>
-            <PointChart times={point.valid_times} s={point} t={t} lang={lang} height={180} />
-            <p className="tile-sub">{point.lat.toFixed(4)}, {point.lon.toFixed(4)}</p>
-          </section>
-        ) : (
-          <p className="side-hint"><Icon name="live" size={16} />{t.click_hint}</p>
-        )}
         <section className="panel">
-          <h3 className="panel-h">{t.monitors} <span>{t.readings}</span></h3>
+          <PanelHead icon="search" title={t.panel_location} />
+          <form className="fc-search side-search" onSubmit={search} role="search">
+            <label className="fc-input">
+              <Icon name="search" size={18} />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.search_short} aria-label={t.search_placeholder} />
+            </label>
+            <button className="btn-grape">{t.search}</button>
+          </form>
+          {pickErr && <p className="warn small">{pickErr}</p>}
+          {point ? (
+            <div className="spot">
+              <div className="panel-row">
+                <span className="small muted">{t.point_title} · {point.lat.toFixed(4)}, {point.lon.toFixed(4)}</span>
+                <button className="link small" onClick={() => setPoint(null)}>{t.close}</button>
+              </div>
+              <div className="spot-vals">
+                <div><span className="small muted">{t.median}</span><LevelBadge level={levelOf(Math.max(...point.p50))} t={t} small /><strong>{fmtPpb(Math.max(...point.p50))} <small>ppb</small></strong></div>
+                <div><span className="small muted">{t.high_est}</span><LevelBadge level={levelOf(Math.max(...point.p90))} t={t} small /><strong>{fmtPpb(Math.max(...point.p90))} <small>ppb</small></strong></div>
+              </div>
+              <PointChart times={point.valid_times} s={point} t={t} lang={lang} height={170} />
+            </div>
+          ) : (
+            <p className="side-hint">{t.click_hint}</p>
+          )}
+        </section>
+
+        <section className="panel">
+          <PanelHead icon="live" title={t.monitors} meta={t.key_measured} />
           <ul className="mon-rows">
             {(now?.monitors ?? []).map((m) => {
               const l = levelStyle(m.level);
@@ -143,16 +165,8 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
             })}
           </ul>
         </section>
+
         {meta && vt && <InputsCard inputs={meta.inputs} hour={hour} t={t} title={`${t.conditions} · ${fmtTime(vt, lang, true)}`} />}
-        <details className="panel fold">
-          <summary>{t.map_key}</summary>
-          <ul className="key">
-            <li><span className="src src-main inline">☣</span> {t.hotspot}</li>
-            <li><span className="src inline" /> {t.sources}</li>
-            <li><span className="dot inline" /> {t.complaints}</li>
-          </ul>
-          <Legend t={t} />
-        </details>
       </aside>
     </div>
     </>

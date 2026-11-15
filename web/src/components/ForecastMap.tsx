@@ -11,7 +11,7 @@ export type MapPlace = { id: string; name: string; lat: number; lon: number; lev
 // OpenFreeMap Positron: free, no API key (CARTO raster tiles now require a key).
 const STYLE = "https://tiles.openfreemap.org/styles/positron";
 
-export function ForecastMap({ overlayUrl, bounds, monitors, sources, complaints, marker, onPick, places, selectedId, onPlace, height = "100%", label }: {
+export function ForecastMap({ overlayUrl, bounds, monitors, sources, complaints, marker, onPick, places, selectedId, onPlace, height = "100%", label, monitorKind = "measured" }: {
   overlayUrl: string | null;
   bounds: [number, number][] | null;
   monitors: MapMonitor[];
@@ -24,6 +24,8 @@ export function ForecastMap({ overlayUrl, bounds, monitors, sources, complaints,
   onPlace?: (id: string) => void;
   height?: string | number;
   label?: string;
+  // "measured": real monitor readings (solid dark pin). "forecast": model values at monitor sites (dashed, "≈").
+  monitorKind?: "measured" | "forecast";
 }) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<MLMap | null>(null);
@@ -40,6 +42,13 @@ export function ForecastMap({ overlayUrl, bounds, monitors, sources, complaints,
     const m = new maplibregl.Map({ container: el.current, style: STYLE, center: [-117.085, 32.567], zoom: 12.3, attributionControl: { compact: true } });
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     m.on("load", () => {
+      // basemap is context, not data: fade it so the forecast overlay and readings stand out
+      for (const l of m.getStyle().layers ?? []) {
+        const set = (k: string, v: number) => { try { m.setPaintProperty(l.id, k, v); } catch { /* not supported for this layer */ } };
+        if (l.type === "fill") set("fill-opacity", 0.55);
+        else if (l.type === "line") set("line-opacity", 0.5);
+        else if (l.type === "symbol") { set("text-opacity", 0.7); set("icon-opacity", 0.5); }
+      }
       ready.current = true;
       m.addSource("complaints", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       m.addLayer({ id: "complaints", type: "circle", source: "complaints",
@@ -98,13 +107,15 @@ export function ForecastMap({ overlayUrl, bounds, monitors, sources, complaints,
         monMarkers.current[mon.site_id] = mk;
       }
       const d = mk.getElement();
-      d.style.background = lvl?.color ?? "#ddd";
-      d.style.color = lvl?.ink ?? "#333";
+      const fc = monitorKind === "forecast";
+      d.classList.remove("mon-fc", "mon-meas");
+      d.classList.add("mon", fc ? "mon-fc" : "mon-meas");
       d.title = mon.name;
-      d.innerHTML = `<span aria-hidden="true">${lvl?.icon ?? "○"}</span> ${fmtPpb(mon.ppb)}<small>ppb</small>`;
-      d.setAttribute("aria-label", `${mon.name}: ${fmtPpb(mon.ppb)} ppb`);
+      d.innerHTML = `<i style="background:${lvl?.color ?? "#999"};color:${lvl?.ink ?? "#333"}" aria-hidden="true">${lvl?.icon ?? "○"}</i>`
+        + `<b>${fc ? "≈" : ""}${fmtPpb(mon.ppb)}</b><small>ppb</small>`;
+      d.setAttribute("aria-label", `${mon.name}: ${fc ? "forecast" : "measured"} ${fmtPpb(mon.ppb)} ppb`);
     }
-  }, [monitors]);
+  }, [monitors, monitorKind]);
 
   // river sources (static)
   useEffect(() => {
