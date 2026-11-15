@@ -10,7 +10,6 @@ from functools import lru_cache
 import numpy as np
 from contourpy import FillType, contour_generator
 
-from model.geo import make_grid
 
 # (level key, lower ppb, upper ppb). Upper None = no ceiling. "green" starts at 1 ppb so the whole
 # basin is not painted; below 1 ppb the overlay PNG is transparent too (model/render.py).
@@ -49,14 +48,9 @@ def zones_from_grid(ppb: np.ndarray, lons: np.ndarray, lats: np.ndarray) -> dict
     return {"type": "FeatureCollection", "features": feats}
 
 
-@lru_cache(maxsize=1)
-def _axes():
-    g = make_grid()
-    return np.asarray(g.lons, dtype=np.float64), np.asarray(g.lats, dtype=np.float64)
-
-
 @lru_cache(maxsize=96)
 def zones_for(run_id: str, hour: int, pct: str) -> dict:
-    from api.runs import _grid_arrays  # local import: keeps this module importable in tests without run files
-    lons, lats = _axes()
+    from api.runs import _grid_arrays, run_grid  # local import: keeps this module importable in tests without run files
+    g = run_grid(run_id)
+    lons, lats = np.asarray(g.lons, dtype=np.float64), np.asarray(g.lats, dtype=np.float64)
     return zones_from_grid(_grid_arrays(run_id)[pct][hour], lons, lats)

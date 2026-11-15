@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, Query
@@ -25,6 +26,18 @@ def _featured() -> dict:
         return {"night": date.fromisoformat(j["night"]).isoformat(), "receptor_id": j.get("receptor_id")}
     except (OSError, ValueError, KeyError, TypeError):
         return {}
+
+
+def _seeded_nights() -> set[str]:
+    """Nights the seed picked (scripts/seed.py, scripts/make_demo.py write them next to the featured night).
+    When present, the Replay list shows only these; REPLAY_LIST=all shows every night with readings."""
+    if os.getenv("REPLAY_LIST", "seeded").strip().lower() == "all":
+        return set()
+    p = (DEMO_DIR if DEMO_MODE else DATA_DIR) / "featured_night.json"
+    try:
+        return {date.fromisoformat(d).isoformat() for d in json.loads(p.read_text()).get("nights", [])}
+    except (OSError, ValueError, TypeError, AttributeError):
+        return set()
 
 
 def _night_stats() -> dict[date, dict[str, float]]:
@@ -58,7 +71,9 @@ def _has_grid(nd: date) -> bool:
 def nights():
     """Newest first. Each night: observed peak, whether a map grid exists, and `featured` (one night at most)."""
     stats = _night_stats()
-    days = sorted((d for d in stats if not DEMO_MODE or valid_run_id(replay_run_id(d))), reverse=True)
+    seeded = _seeded_nights()
+    days = sorted((d for d in stats if (not DEMO_MODE or valid_run_id(replay_run_id(d)))
+                   and (not seeded or d.isoformat() in seeded)), reverse=True)
     feat = _featured()
     fnight = feat.get("night") if feat.get("night") in {d.isoformat() for d in days} else None
     if not fnight:

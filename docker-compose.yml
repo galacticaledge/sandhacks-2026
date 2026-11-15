@@ -19,6 +19,13 @@ services:
       MODEL_WORKERS: ${MODEL_WORKERS:-4}
       # Base of the unsubscribe links in alert emails.
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+      # SEED=1: on first start, load history, calibrate and replay the worst nights in the background
+      # (scripts/seed.py, log in logs/seed.log). SEED=small: same, with the Replay list capped at the 5 worst nights.
+      # SEED=always reseeds on every start. SEED_ARGS e.g. "--skip reports".
+      SEED: ${SEED:-0}
+      SEED_ARGS: ${SEED_ARGS:-}
+      # After seeding, the Replay list shows only the seeded bad nights; REPLAY_LIST=all shows every night.
+      REPLAY_LIST: ${REPLAY_LIST:-seeded}
     ports:
       - "8000:8000"
     volumes:

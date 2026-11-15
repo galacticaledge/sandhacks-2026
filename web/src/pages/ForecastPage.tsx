@@ -78,7 +78,7 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
     e.preventDefault();
     if (!q.trim()) return;
     setBusy(true);
-    const u = `https://nominatim.openstreetmap.org/search?format=json&limit=1&bounded=1&viewbox=-117.14,32.60,-117.03,32.535&q=${encodeURIComponent(q)}`;
+    const u = `https://nominatim.openstreetmap.org/search?format=json&limit=1&bounded=1&viewbox=-117.25,32.72,-116.93,32.534&q=${encodeURIComponent(q)}`;
     const r = await fetch(u).then((x) => x.json()).catch(() => []);
     setBusy(false);
     if (r[0]) pickAt(parseFloat(r[0].lat), parseFloat(r[0].lon), r[0].display_name.split(",").slice(0, 2).join(","));

@@ -19,10 +19,12 @@ from datetime import date, datetime, timedelta, timezone
 
 import numpy as np
 
-from config import FORECAST_DIR, MONITORS, ROOT, TZ
+from config import FORECAST_DIR, GRID_M, MONITORS, ROOT, TZ
 from db import store
 from model import blend, ensemble, kalman, puff
 from model.geo import make_grid, to_xy
+
+F16_MAX = 65000.0   # grids are stored as float16; larger values (right at the river) would become inf
 from model.inputs import assemble_met, flow_series, hours, load_calibration, observations
 from model.kalman import RELAX_TAU_H, LogKFilter, relax_toward
 from model.render import write_png
@@ -168,7 +170,7 @@ def run_forecast(issued: datetime | None = None, scenario: str = "live", weather
         ng = g.x.size
         shape = (LEAD_H,) + g.shape
         for name, arr in (("p10", p10), ("p50", p50), ("p90", p90)):
-            np.save(out_dir / f"{name}.npy", arr[:, :ng].reshape(shape).astype(np.float16))
+            np.save(out_dir / f"{name}.npy", np.minimum(arr[:, :ng], F16_MAX).reshape(shape).astype(np.float16))
         (out_dir / "png").mkdir()
         for h in range(LEAD_H):
             write_png(p50[h, :ng].reshape(g.shape), out_dir / "png" / f"p50_{h:02d}.png")
@@ -186,7 +188,7 @@ def run_forecast(issued: datetime | None = None, scenario: str = "live", weather
     meta = {
         "run_id": run_id, "scenario": scenario, "issued_at": issued.isoformat(),
         "valid_times": [t.isoformat() for t in valid],
-        "grid": {"bounds": g.bounds, "shape": list(g.shape), "cell_m": cell_m or 50} if g is not None else None,
+        "grid": {"bounds": g.bounds, "shape": list(g.shape), "cell_m": cell_m or GRID_M} if g is not None else None,
         "inputs": {
             "met": met.slice(SPINUP_H, len(times)).to_dict(),
             "met_hour_sources": met_src[SPINUP_H:],

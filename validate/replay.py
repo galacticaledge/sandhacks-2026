@@ -22,7 +22,7 @@ import numpy as np
 from collectors.weather_archive import backfill_weather
 from config import DATA_DIR, DEMO_DIR, DEMO_MODE, FORECAST_DIR, MONITORS, TZ
 from db import store
-from model.geo import make_grid
+from model.geo import grid_from_meta, make_grid
 from model.inputs import observations
 from model import ensemble
 from model.run import current_params, run_forecast
@@ -63,6 +63,27 @@ def replay_run_id(night: date) -> str:
     return issue_time(night).astimezone(UTC).strftime("%Y%m%dT%H%MZ") + "-replay"
 
 
+def widespread_nights(n: int = 5, since: date = hindcast.TUNE_END, min_hours: int = 6) -> list[date]:
+    """Held-out nights when every monitor reached orange: the gas covered the valley, out to Imperial Beach
+    3.3 km from the river. Worst first: most orange monitor-hours, then the highest weakest-monitor peak."""
+    cut = datetime(since.year, since.month, since.day, 18, tzinfo=TZ)
+    rows = store.query("SELECT observed_at, site_id, ppb FROM h2s_readings WHERE ppb IS NOT NULL AND observed_at >= :a",
+                       {"a": store.ts(cut)})
+    stats: dict[date, dict[str, list[float]]] = {}
+    for r in rows:
+        t = store.dt(r["observed_at"]).astimezone(TZ)
+        if 9 <= t.hour < 18:
+            continue
+        night = t.date() if t.hour >= 18 else t.date() - timedelta(days=1)
+        stats.setdefault(night, {}).setdefault(r["site_id"], []).append(float(r["ppb"]))
+    ranked = []
+    for night, by_site in stats.items():
+        vals = [by_site.get(m.site_id, []) for m in MONITORS]
+        if all(len(v) >= min_hours and max(v) >= metrics.ORANGE_PPB for v in vals):
+            ranked.append((sum(sum(x >= metrics.ORANGE_PPB for x in v) for v in vals), min(max(v) for v in vals), night))
+    return [d for *_, d in sorted(ranked, reverse=True)[:n]]
+
+
 def calibration_key(cal: dict | None) -> str | None:
     """Fingerprint of the fitted parameters (not of when they were fitted), so a cached replay is reused only
     if it was made with the calibration that is current now."""
@@ -70,6 +91,12 @@ def calibration_key(cal: dict | None) -> str | None:
         return None
     core = {k: v for k, v in cal.items() if k not in ("fitted_at", "window")}
     return hashlib.sha1(json.dumps(core, sort_keys=True, default=str).encode()).hexdigest()[:12]
+
+
+def same_box(g: dict | None) -> bool:
+    """A cached map counts only if it covers the current forecast box at the current cell size."""
+    cur = make_grid()
+    return bool(g) and g.get("bounds") == cur.bounds and list(g.get("shape", [])) == list(cur.shape)
 
 
 def is_current(meta: dict, key: str | None) -> bool:
@@ -83,7 +110,7 @@ def replay_night(night: date, grid: bool = False, force: bool = False, params=No
     params = params or current_params()
     if meta_path.exists() and not force:
         meta = json.loads(meta_path.read_text())
-        if (meta.get("grid") or not grid) and is_current(meta, calibration_key(params[2])):
+        if (not grid or same_box(meta.get("grid"))) and is_current(meta, calibration_key(params[2])):
             return meta
     backfill_weather(issued - timedelta(days=3), issued + timedelta(days=2))
     return run_forecast(issued, scenario="replay", weather="observed", n_members=REPLAY_MEMBERS, grid=grid,
@@ -139,7 +166,6 @@ def spatial_check(run_ids: list[str]) -> dict:
     complaints with a street-level location count (placeholder city points are dropped), and each location
     counts once per run, so one household calling every hour does not dominate.
     """
-    g = make_grid()
     placeholders = placeholder_points(store.complaints(datetime(2000, 1, 1, tzinfo=UTC), datetime.now(UTC)))
     pct, runs, locs, dropped, seen = [], set(), set(), 0, set()
     for rid in run_ids:
@@ -147,6 +173,7 @@ def spatial_check(run_ids: list[str]) -> dict:
         if not (d / "p50.npy").exists():
             continue
         meta = json.loads((d / "meta.json").read_text())
+        g = grid_from_meta(meta["grid"])
         vt = [datetime.fromisoformat(t).astimezone(UTC) for t in meta["valid_times"]]
         p50 = np.load(d / "p50.npy", mmap_mode="r")
         for c in store.complaints(vt[0], vt[-1] + timedelta(hours=1)):

@@ -51,7 +51,7 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
   const search = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!q.trim()) return;
-    const u = `https://nominatim.openstreetmap.org/search?format=json&limit=1&bounded=1&viewbox=-117.14,32.60,-117.03,32.535&q=${encodeURIComponent(q)}`;
+    const u = `https://nominatim.openstreetmap.org/search?format=json&limit=1&bounded=1&viewbox=-117.25,32.72,-116.93,32.534&q=${encodeURIComponent(q)}`;
     const r = await fetch(u).then((x) => x.json()).catch(() => []);
     if (Array.isArray(r) && r[0]) pickAt(parseFloat(r[0].lat), parseFloat(r[0].lon));
     else { setPoint(null); setPickErr(t.outside); }

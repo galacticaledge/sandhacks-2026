@@ -1,14 +1,15 @@
-"""SDAPCD odor complaints (Resilient Shield geojson). South Bay only."""
+"""SDAPCD odor complaints (Resilient Shield geojson). Only those inside the forecast box (config.BBOX) plus ~1 km."""
 from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta, timezone
 
 from collectors.common import fetch
+from config import BBOX
 from db import store
 
 URL = "https://oss.resilientservice.mooo.com/resilentpublic/latest/tijuana/sd_complaints/complaints.geojson"
-BOX = (32.52, 32.62, -117.16, -116.98)
+BOX = (BBOX["lat_min"] - 0.01, BBOX["lat_max"] + 0.01, BBOX["lon_min"] - 0.01, BBOX["lon_max"] + 0.01)
 
 
 def parse(payload: bytes) -> list[dict]:

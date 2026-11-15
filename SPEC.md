@@ -127,7 +127,7 @@ Q is river flow in million gallons per day, T is air temperature (a stand-in for
 
 **3. Dispersion to a street-level grid.**
 
-- Grid: 50 m cells over the box lat 32.535–32.600, lon −117.140 to −117.030 (about 10 × 7 km). Concentration at 1.5 m above ground.
+- Grid: 100 m cells over the box lat 32.534–32.720, lon −117.250 to −116.930 (about 30 × 21 km, border to downtown San Diego). Concentration at 1.5 m above ground. (Was 50 m over lat 32.535–32.600, lon −117.140 to −117.030; on the worst nights the plume ran off every edge of that box. Puffs are now kept until they leave the box plus 2 km, instead of a fixed 12 km.)
 - **Primary: a Gaussian puff model.** Release a puff from each source every 10 minutes, move it with the hourly wind, grow its spread with travel time, and sum the puffs at each cell. Puffs handle wind shifts and near-calm nights, which is when peaks happen.
 - Spread rates come from Pasquill–Gifford stability classes A to F, set from wind speed, time of day and cloud cover (simplified Turner method). Clear, calm nights get class E or F: slow spread, high concentrations.
 - Floor wind speed at 0.5 m/s. Add a fitted background level per monitor, roughly 0.3–0.6 ppb.

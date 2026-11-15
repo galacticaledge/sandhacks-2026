@@ -14,4 +14,7 @@ logs/
 .omc/
 data/calibration.json
 data/skill.json
+data/featured_night.json
+data/.seeded.json
+data/.seed.lock
 web/tsconfig.tsbuildinfo

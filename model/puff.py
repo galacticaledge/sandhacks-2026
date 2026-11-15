@@ -14,12 +14,14 @@ import numpy as np
 from scipy.special import erf
 
 from model.emission import ug_m3_to_ppb
+from model.geo import retire_m
 from model.met import WIND_FLOOR_MS, Met
 from model.sources import SourceConfig
 from model.stability import sigma_y, sigma_z
 
 STEP_S = 600.0
 MAX_AGE_S = 4 * 3600.0
+RETIRE_M = retire_m()   # was a fixed 12 km; now follows the forecast box (config.BBOX)
 SQRT2 = math.sqrt(2.0)
 NORM = (2 * math.pi) ** 1.5
 
@@ -84,7 +86,7 @@ def simulate(met: Met, emis_gps: np.ndarray, src: SourceConfig, rx: np.ndarray, 
             # advance and retire
             px = px + ex * L; py = py + ey * L
             dist = dist + L; age = age + STEP_S
-            keep = (age < max_age_s) & (np.abs(px) < 12_000) & (np.abs(py) < 12_000)
+            keep = (age < max_age_s) & (np.abs(px) < RETIRE_M) & (np.abs(py) < RETIRE_M)
             px, py, dist, age, mass, sid = px[keep], py[keep], dist[keep], age[keep], mass[keep], sid[keep]
 
     # g*s/m^3 accumulated over the hour -> hourly mean g/m^3 -> ug/m^3 -> ppb
@@ -125,10 +127,10 @@ def simulate_points(met: Met, emis_gps: np.ndarray, src: SourceConfig, rx, ry, z
         ox = cx[j] - cx[i][:, None]; oy = cy[j] - cy[i][:, None]; dist = cp[j] - cp[i][:, None]
         px = src.x[None, None, :] + ox[:, :, None]          # [n, A, S] puff position at the start of step j
         py = src.y[None, None, :] + oy[:, :, None]
-        # retired once it leaves the 12 km box (checked after each advance, as in simulate)
+        # retired once it leaves the forecast box plus 2 km (checked after each advance, as in simulate)
         ex_j, ey_j, L_j, u_j = ex[jj], ey[jj], L[jj], u[jj]
         nx_ = px + (ex_j * L_j)[:, :, None]; ny_ = py + (ey_j * L_j)[:, :, None]
-        gone = np.maximum.accumulate((np.abs(nx_) >= 12_000) | (np.abs(ny_) >= 12_000), axis=1)
+        gone = np.maximum.accumulate((np.abs(nx_) >= RETIRE_M) | (np.abs(ny_) >= RETIRE_M), axis=1)
         alive = live[:, :, None] & ~np.concatenate([np.zeros_like(gone[:, :1]), gone[:, :-1]], axis=1)
         dx = rx[None, None, None, :] - px[..., None]        # [n, A, S, N]
         dy = ry[None, None, None, :] - py[..., None]

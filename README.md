@@ -33,7 +33,24 @@ cp .env.example .env                      # empty DATABASE_URL -> local SQLite
 
 Tests: `.venv/bin/python -m pytest -q`
 
-Demo fallback: `python -m scripts.make_demo` freezes a snapshot; `DEMO_MODE=1` serves it with no outside calls.
+Seed a live database (history, weather, river flow, complaints, Gemini flow events, calibration, and map replays
+of the worst nights, with the worst one featured on the Replay page). Uses `$DATABASE_URL`; safe to rerun:
+
+```bash
+.venv/bin/python -m scripts.seed                      # all steps (~30 min, mostly the bad-night maps)
+.venv/bin/python -m scripts.seed --skip flow reports  # leave steps out; --only replays to redo just the maps
+docker compose exec smellcast python -m scripts.seed  # inside a running container
+```
+
+In Docker/Podman, set `SEED=1` in `.env` instead: the app container seeds itself once in the background on its
+first start (log in `logs/seed.log`, marker in `data/.seeded.json`). `SEED=small` caps the Replay list at the 5 worst nights; `SEED=always` reseeds on every start;
+`SEED_ARGS="--skip reports --nights 3"` passes options through.
+
+The `flow` step accepts the USIBWC Water Data Portal disclaimer. The `reports` step spends Bright Data credit and
+runs only when the Bright Data and Gemini keys are set. `--score` also replays and scores every night (hours).
+
+Demo fallback: `python -m scripts.make_demo` freezes a snapshot whose Replay list is the 5 worst nights (plus news
+reports if seeded; `--trim` keeps only the data around those nights); `DEMO_MODE=1` serves it with no outside calls.
 
 ## Deploy (Vultr)
 

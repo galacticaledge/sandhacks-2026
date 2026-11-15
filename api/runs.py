@@ -10,7 +10,7 @@ import numpy as np
 
 from config import FORECAST_DIR, TZ
 from db import store
-from model.geo import make_grid
+from model.geo import grid_from_meta
 
 RUN_RE = re.compile(r"^[0-9]{8}T[0-9]{4}Z(-[a-z]+)?$")
 
@@ -52,8 +52,14 @@ def _grid_arrays(run_id: str):
     return {p: np.load(d / f"{p}.npy", mmap_mode="r") for p in ("p10", "p50", "p90")}
 
 
+@lru_cache(maxsize=8)
+def run_grid(run_id: str):
+    """The grid this run was computed on (older runs used a smaller box at 50 m)."""
+    return grid_from_meta(load_meta(run_id)["grid"])
+
+
 def point_series(run_id: str, lat: float, lon: float) -> dict | None:
-    g = make_grid()
+    g = run_grid(run_id)
     ij = g.index_of(lat, lon)
     if ij is None:
         return None

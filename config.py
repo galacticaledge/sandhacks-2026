@@ -26,9 +26,10 @@ if DEMO_MODE:  # seeded snapshot: never touches live sources or the production d
 DEFAULT_FLOW_MGD = float(os.getenv("DEFAULT_FLOW_MGD", "35"))
 USER_AGENT = "smellcast-hackathon (South Bay H2S forecast)"
 
-# Grid: spec section 5.3
-BBOX = {"lat_min": 32.535, "lat_max": 32.600, "lon_min": -117.140, "lon_max": -117.030}
-GRID_M = 50.0
+# Grid: spec section 5.3. South Bay to downtown San Diego (Coronado, Chula Vista, National City, Otay Mesa),
+# about 21 x 30 km: on the worst nights the plume ran off every edge of the old 7 x 10 km box.
+BBOX = {"lat_min": 32.534, "lat_max": 32.720, "lon_min": -117.250, "lon_max": -116.930}
+GRID_M = 100.0
 REF_LAT, REF_LON = 32.5675, -117.085  # local tangent-plane origin
 RECEPTOR_Z_M = 1.5
 
