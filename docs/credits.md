@@ -22,5 +22,3 @@ Not in `api/scheduler.py` on purpose, so Bright Data spend stays under human con
 - Cache: `data/raw/web_reports/pages/` plus `index.jsonl` (url, file, fetch time). A cached URL is not refetched;
   listings for a window that includes today are refetched after 6 hours. A rerun of a past window costs $0.
 - A typical new window costs 10 to 15 requests (about $0.02). Add a row to the table above after each run.
-
-- **San Diego County boundary** (`web/public/sd-county.geojson`): U.S. Census Bureau TIGERweb, State_County layer, GEOID 06073 (public domain), retrieved 2026-11-15. Used only to fade the map outside the county and draw the county line.
