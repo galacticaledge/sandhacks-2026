@@ -11,16 +11,18 @@ import { LEVELS, fmtPpb, fmtTime, levelOf, levelStyle } from "../levels";
 import type { Lang, Strings } from "../i18n";
 
 type Tonight = { run_id: string; run_kind: string; issued_at: string; items: TonightItem[] };
-type Kind = "all" | "neighborhood" | "school" | "monitor";
+type LayerKey = "zones" | "monitors" | "schools" | "neighborhoods";
 type Picked = { id?: string; name: string; lat: number; lon: number; times: string[]; s: Series };
 
+const ZONE_MIN = 1; // ppb, lowest zone band (api/zones.py)
 const rank = (l: Level | null | undefined) => LEVELS.findIndex((x) => x.key === l);
 
 // Matches the Figma "Smellcast Forecast" frame: address search, map card with filter pills, detail cards below.
 export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | null }) {
   const [meta, setMeta] = useState<Meta | null>(null);
   const [tonight, setTonight] = useState<Tonight | null>(null);
-  const [kind, setKind] = useState<Kind>("all");
+  const [layers, setLayers] = useState<Record<LayerKey, boolean>>({ zones: true, monitors: true, schools: true, neighborhoods: true });
+  const toggle = (k: LayerKey) => setLayers((l) => ({ ...l, [k]: !l[k] }));
   const [minLevel, setMinLevel] = useState<Level>("green");
   const [hour, setHour] = useState(0);
   const [pct, setPct] = useState<"p50" | "p90">("p50");
@@ -42,7 +44,8 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
   useEffect(() => { get<Tonight>(`/api/tonight?lang=${lang}`).then(setTonight).catch(() => setTonight(null)); }, [lang]);
 
   const items = useMemo(() => (tonight?.items ?? []).filter((r) =>
-    (kind === "all" || r.kind === kind) && rank(r.level ?? "green") >= rank(minLevel)), [tonight, kind, minLevel]);
+    ((r.kind === "school" && layers.schools) || (r.kind === "neighborhood" && layers.neighborhoods) || (r.kind === "monitor" && layers.monitors))
+    && rank(r.level ?? "green") >= rank(minLevel)), [tonight, layers, minLevel]);
 
   const selectPlace = (id: string) => {
     const r = tonight?.items.find((x) => x.id === id) ?? meta?.receptors.find((x) => x.id === id);
@@ -79,9 +82,12 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
     else setMsg(t.outside);
   };
 
+  // a school is highlighted when the model puts it inside a predicted zone (>= 1 ppb, the zones' lowest band)
+  // at the hour and estimate on screen: the same numbers the zones are traced from
   const places: MapPlace[] = useMemo(() => items.filter((r) => r.kind !== "monitor")
-    .map((r) => ({ id: r.id, name: r.name, lat: r.lat, lon: r.lon, level: r.level ?? null, ppb: r.peak_p50 ?? null })), [items]);
-  const showMonitors = kind === "all" || kind === "monitor";
+    .map((r) => ({ id: r.id, name: r.name, lat: r.lat, lon: r.lon, level: r.level ?? null, ppb: r.peak_p50 ?? null, kind: r.kind,
+      hot: r.kind === "school" && (meta?.series[r.id]?.[pct]?.[hour] ?? 0) >= ZONE_MIN })), [items, meta, pct, hour]);
+  const hotSchools = places.filter((p) => p.hot).length;
   const vt = meta?.valid_times[hour];
   const met = meta?.inputs.met;
   const pItem = picked?.id ? tonight?.items.find((x) => x.id === picked.id) : undefined;
@@ -100,7 +106,10 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
   const worst = [...placesTonight].sort((a, b) => rank(b.level ?? "green") - rank(a.level ?? "green") || (b.peak_p50 ?? 0) - (a.peak_p50 ?? 0))[0];
   const nLikely = placesTonight.filter((i) => i.alert === "likely").length, nPossible = placesTonight.filter((i) => i.alert === "possible").length;
   const lvlName = (l?: Level | null) => (l ? (t[`level_${l}` as keyof Strings] as string) : "–");
-  const pills: [Kind, string][] = [["all", t.all_areas], ["neighborhood", t.neighborhoods], ["school", t.schools], ["monitor", t.monitors_f]];
+  const layerBtns: [LayerKey, string, string][] = [
+    ["zones", t.lyr_zones, t.lyr_zones_tip], ["monitors", t.lyr_monitors, t.lyr_monitors_tip],
+    ["schools", t.lyr_schools, t.lyr_schools_tip], ["neighborhoods", t.lyr_neighborhoods, t.lyr_neighborhoods_tip],
+  ];
 
   return (
     <div className="fc">
@@ -187,9 +196,12 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
               </select>
               <Icon name="chevron" size={16} />
             </label>
-            <div className="seg area-seg" role="group" aria-label={t.all_areas}>
-              {pills.map(([k, label]) => (
-                <button key={k} className={kind === k ? "on" : ""} aria-pressed={kind === k} onClick={() => setKind(k)}>{label}</button>
+            <div className="seg area-seg layer-seg" role="group" aria-label={t.map_layers}>
+              {layerBtns.map(([k, label, tip]) => (
+                <button key={k} className={layers[k] ? "on" : ""} aria-pressed={layers[k]} title={tip} onClick={() => toggle(k)}>
+                  <span className={`lyr-dot lyr-${k}`} aria-hidden="true" />{label}
+                  {k === "schools" && layers.schools && hotSchools > 0 && <span className="lyr-count" title={t.lyr_schools_tip}>{hotSchools}</span>}
+                </button>
               ))}
             </div>
           </div>
@@ -202,8 +214,10 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
         <ForecastMap
           overlayUrl={null}
           zonesUrl={meta ? `/api/forecast/${meta.run_id}/zones/${hour}.geojson?pct=${pct}` : null}
+          showZones={layers.zones}
+          areasUrl={layers.neighborhoods ? "/community-areas.geojson" : null}
           bounds={meta?.grid?.bounds ?? null}
-          monitors={showMonitors ? now?.monitors ?? [] : []}
+          monitors={layers.monitors ? now?.monitors ?? [] : []}
           sources={(now as unknown as { sources?: MapSource[] })?.sources}
           places={places}
           selectedId={picked?.id}

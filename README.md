@@ -52,4 +52,4 @@ verbatim SDAPCD guidance, EN/ES templates, email · `db/` Tiger Data schema + st
 
 Live H₂S: UCSD Resilient Shield and the San Diego County Air Pollution Control District (SDAPCD). Scientific basis:
 Rico et al., *Science* (2025), Scripps / Prather lab. Weather: NWS, Iowa Environmental Mesonet. Basemap © OpenStreetMap
-contributors, OpenFreeMap. San Diego County boundary: U.S. Census Bureau TIGERweb (public domain).
+contributors, OpenFreeMap. San Diego County and City of Imperial Beach boundaries: U.S. Census Bureau TIGERweb (public domain). Community planning areas: City of San Diego Open Data Portal (Community Planning Districts).

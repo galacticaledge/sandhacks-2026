@@ -6,15 +6,18 @@ import { fmtPpb, levelStyle, levelOf } from "../levels";
 
 export type MapMonitor = { site_id: string; name: string; lat: number; lon: number; ppb: number | null };
 export type MapSource = { id: string; name: string; lat: number; lon: number; main: boolean };
-export type MapPlace = { id: string; name: string; lat: number; lon: number; level: Level | null; ppb: number | null };
+export type MapPlace = { id: string; name: string; lat: number; lon: number; level: Level | null; ppb: number | null; kind?: string; hot?: boolean };
 
 // OpenFreeMap Positron: free, no API key (CARTO raster tiles now require a key).
 const STYLE = "https://tiles.openfreemap.org/styles/positron";
 
-export function ForecastMap({ overlayUrl, zonesUrl, bounds, monitors, sources, complaints, marker, onPick, places, selectedId, onPlace, height = "100%", label, monitorKind = "measured" }: {
+export function ForecastMap({ overlayUrl, zonesUrl, showZones = true, areasUrl, bounds, monitors, sources, complaints, marker, onPick, places, selectedId, onPlace, height = "100%", label, monitorKind = "measured" }: {
   overlayUrl: string | null;
   // predicted concentration zones (GeoJSON from /api/forecast/{run}/zones/{h}.geojson); drawn as translucent polygons
   zonesUrl?: string | null;
+  showZones?: boolean;
+  // community area boundaries (GeoJSON polygons with a "name"), drawn as outlines with labels
+  areasUrl?: string | null;
   bounds: [number, number][] | null;
   monitors: MapMonitor[];
   sources?: MapSource[];
@@ -59,6 +62,8 @@ export function ForecastMap({ overlayUrl, zonesUrl, bounds, monitors, sources, c
       el.current?.querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
       ready.current = true;
       const empty = { type: "FeatureCollection" as const, features: [] };
+      m.addSource("areas", { type: "geojson", data: empty });
+      m.addLayer({ id: "areas-fill", type: "fill", source: "areas", paint: { "fill-color": "#8f857d", "fill-opacity": 0.07 } });
       m.addSource("zones", { type: "geojson", data: empty });
       const byLevel = (g: string, y: string, o: string, r: string) =>
         ["match", ["get", "level"], "green", g, "yellow", y, "orange", o, "review", r, g] as unknown as maplibregl.ExpressionSpecification;
@@ -66,6 +71,11 @@ export function ForecastMap({ overlayUrl, zonesUrl, bounds, monitors, sources, c
         paint: { "fill-color": byLevel("#1a9850", "#fee08b", "#f46d43", "#762a83"), "fill-opacity": ["match", ["get", "level"], "green", 0.16, "yellow", 0.34, "orange", 0.42, "review", 0.5, 0.2] } });
       m.addLayer({ id: "zones-line", type: "line", source: "zones",
         paint: { "line-color": byLevel("#15803d", "#ca8a04", "#c2410c", "#5b2167"), "line-width": ["match", ["get", "level"], "green", 0.8, 1.4], "line-opacity": 0.85 } });
+      m.addLayer({ id: "areas-line", type: "line", source: "areas",
+        paint: { "line-color": "#5c5552", "line-width": 2, "line-opacity": 0.85 } });
+      m.addLayer({ id: "areas-label", type: "symbol", source: "areas",
+        layout: { "text-field": ["upcase", ["get", "name"]], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-letter-spacing": 0.12, "text-max-width": 8 },
+        paint: { "text-color": "#5c5552", "text-halo-color": "rgba(255,255,255,0.85)", "text-halo-width": 1.5 } });
       // everything outside San Diego County is washed out; the county line is drawn thin and quiet
       m.addSource("county-mask", { type: "geojson", data: empty });
       m.addLayer({ id: "county-mask", type: "fill", source: "county-mask", paint: { "fill-color": "#3a3533", "fill-opacity": 0.55 } });
@@ -83,13 +93,23 @@ export function ForecastMap({ overlayUrl, zonesUrl, bounds, monitors, sources, c
       m.addLayer({ id: "complaints", type: "circle", source: "complaints",
         paint: { "circle-radius": 3, "circle-color": "#5d4a72", "circle-opacity": 0.55, "circle-stroke-color": "#fff", "circle-stroke-width": 0.8 } });
       m.addSource("places", { type: "geojson", data: empty });
+      m.addLayer({ id: "places-halo", type: "circle", source: "places", filter: ["==", ["get", "hot"], true],
+        paint: { "circle-radius": 15, "circle-color": "#a787cb", "circle-opacity": 0.3, "circle-stroke-color": "#5d4a72", "circle-stroke-width": 1.5 } });
       m.addLayer({ id: "places-dot", type: "circle", source: "places",
-        paint: { "circle-radius": ["case", ["get", "sel"], 7.5, 5.5], "circle-color": "#ffffff",
-          "circle-stroke-color": ["case", ["get", "sel"], "#5d4a72", ["get", "color"]], "circle-stroke-width": ["case", ["get", "sel"], 4, 2.5] } });
+        paint: { "circle-radius": ["case", ["get", "sel"], 7.5, ["get", "hot"], 7, ["==", ["get", "kind"], "school"], 4.5, 5.5],
+          "circle-color": "#ffffff",
+          "circle-stroke-color": ["case", ["get", "sel"], "#5d4a72", ["get", "color"]],
+          "circle-stroke-width": ["case", ["get", "sel"], 4, ["get", "hot"], 3.5, 2.5],
+          "circle-opacity": ["case", ["any", ["get", "hot"], ["get", "sel"], ["!=", ["get", "kind"], "school"]], 1, 0.75],
+          "circle-stroke-opacity": ["case", ["any", ["get", "hot"], ["get", "sel"], ["!=", ["get", "kind"], "school"]], 1, 0.6] } });
       m.addLayer({ id: "places-label", type: "symbol", source: "places",
-        layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": ["case", ["get", "sel"], 13, 11],
-          "text-offset": [0, 0.9], "text-anchor": "top", "text-optional": true, "text-max-width": 9 },
-        paint: { "text-color": ["case", ["get", "sel"], "#3b2d4d", "#3a3532"], "text-halo-color": "rgba(255,255,255,0.9)", "text-halo-width": 1.4 } });
+        layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": ["case", ["get", "sel"], 13, ["get", "hot"], 12.5, 11],
+          "text-offset": [0, 0.9], "text-anchor": "top", "text-optional": true, "text-max-width": 9,
+          // when labels collide, the selected place and highlighted schools keep theirs
+          "symbol-sort-key": ["case", ["get", "sel"], 0, ["get", "hot"], 1, 2] },
+        paint: { "text-color": ["case", ["get", "sel"], "#3b2d4d", ["get", "hot"], "#3b2d4d", "#3a3532"],
+          "text-opacity": ["case", ["any", ["get", "hot"], ["get", "sel"], ["!=", ["get", "kind"], "school"]], 1, 0.7],
+          "text-halo-color": "rgba(255,255,255,0.9)", "text-halo-width": 1.4 } });
       m.on("mouseenter", "places-dot", () => { m.getCanvas().style.cursor = "pointer"; });
       m.on("mouseleave", "places-dot", () => { m.getCanvas().style.cursor = ""; });
       m.fire("smellcast:ready");
@@ -182,11 +202,31 @@ export function ForecastMap({ overlayUrl, zonesUrl, bounds, monitors, sources, c
     if (!m) return;
     const apply = () => (m.getSource("places") as GeoJSONSource | undefined)?.setData({
       type: "FeatureCollection",
-      features: (places ?? []).map((p) => ({ type: "Feature", properties: { id: p.id, name: p.name, sel: p.id === selectedId, color: levelStyle(p.level)?.color ?? "#8f857d" },
+      features: (places ?? []).map((p) => ({ type: "Feature", properties: { id: p.id, name: p.name, sel: p.id === selectedId, kind: p.kind ?? "", hot: !!p.hot, color: levelStyle(p.level)?.color ?? "#8f857d" },
         geometry: { type: "Point", coordinates: [p.lon, p.lat] } })),
     });
     if (ready.current) apply(); else m.once("smellcast:ready", apply);
   }, [places, selectedId]);
+
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    const apply = () => ["zones-fill", "zones-line"].forEach((id) => m.getLayer(id) && m.setLayoutProperty(id, "visibility", showZones ? "visible" : "none"));
+    if (ready.current) apply(); else m.once("smellcast:ready", apply);
+  }, [showZones]);
+
+  // community area boundaries
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    let live = true;
+    const apply = () => {
+      if (!areasUrl) { (m.getSource("areas") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: [] }); return; }
+      fetch(areasUrl).then((r) => r.json()).then((fc) => { if (live) (m.getSource("areas") as GeoJSONSource | undefined)?.setData(fc); }).catch(() => {});
+    };
+    if (ready.current) apply(); else m.once("smellcast:ready", apply);
+    return () => { live = false; };
+  }, [areasUrl]);
 
   // predicted concentration zones
   useEffect(() => {

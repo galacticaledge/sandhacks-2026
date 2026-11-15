@@ -835,3 +835,17 @@ h3, .card h3, .chart-card h3, .detail-head h2, .rank .detail-head h2, .legend-ti
 @media (max-width: 760px) { .zone-legend.zl-inline { display: flex; } }
 .mon-fc.inline { position: relative; font-size: 11px; padding: 2px 6px 2px 2px; border-width: 1.5px; } .mon-fc.inline i { width: 12px; height: 12px; }
 .zone-legend .mon-fc.inline { color: var(--ink); border-color: var(--lavender); }
+
+/* ---- map layer toggles (same segmented look; each one is an independent on/off) ---- */
+.layer-seg button { display: inline-flex; align-items: center; gap: 6px; }
+.layer-seg button:not(.on) { color: var(--muted); }
+.layer-seg button:not(.on) .lyr-dot { opacity: .35; }
+.lyr-dot { display: inline-block; width: 12px; height: 12px; flex: none; }
+.lyr-zones { border-radius: 4px; background: rgba(26, 152, 80, .35); border: 1.5px solid #15803d; box-shadow: inset -5px -5px 0 rgba(244, 109, 67, .55); }
+.lyr-monitors { border-radius: 50%; background: var(--graphite); border: 2px solid #fff; }
+.lyr-schools { border-radius: 50%; background: #fff; border: 3px solid var(--lavender); }
+.lyr-neighborhoods { border-radius: 3px; border: 2px solid var(--stone); background: rgba(143, 133, 125, .2); }
+[data-theme="dark"] .lyr-neighborhoods, :root:not([data-theme="light"]) .lyr-neighborhoods { border-color: var(--olive); }
+.layer-seg button.on .lyr-monitors { border-color: #fff; }
+.lyr-count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--lavender); color: #2a2135; font-size: 11px; font-weight: 700; display: inline-grid; place-items: center; }
+@media (max-width: 760px) { .layer-seg button { padding: 0 10px; } }

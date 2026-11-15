@@ -146,3 +146,18 @@ All maps (Forecast, Live Map, Replay) share `ForecastMap`:
   - Forecast: overlay at the map's bottom-left, with the measured-pin sample.
   - Live Map: in the key row under the map.
   - Replay: under the two maps, with samples for the measured pin and the dashed "≈" forecast-at-a-monitor pin.
+
+## Forecast map layers (toolbar)
+
+The risk-level dropdown stays. The area-type choice became four independent on/off toggles in the same segmented style, each with a small symbol matching what it draws:
+
+| Toggle | What it shows | Data |
+|---|---|---|
+| Impact zones | predicted gas concentration footprint (filled contours) for the hour and estimate on screen | `/api/forecast/{run}/zones/{h}.geojson` |
+| Monitors | actual sensor readings (measured pins) | `/api/now` |
+| Schools | school points; a school is highlighted (lavender halo, bold label, count badge on the toggle) when the model puts it inside a predicted zone (≥ 1 ppb) at that hour and estimate | `meta.series[id][pct][hour]`, the same grid the zones come from |
+| Neighborhoods | community area boundaries with labels: City of San Diego planning areas (Otay Mesa-Nestor, San Ysidro, Otay Mesa, Tijuana River Valley) and the City of Imperial Beach | `web/public/community-areas.geojson` |
+
+- The ranking list follows the toggles (schools, neighborhood points and monitors are listed only when their toggle is on).
+- About the boundaries: the named neighborhoods (Nestor, Egger Highlands, Palm City, Otay Mesa West) have no official boundaries of their own. They sit inside the Otay Mesa-Nestor planning area, which the map outlines. Each area in the file lists the neighborhoods and receptors inside it.
+- Area sources: City of San Diego Community Planning Districts (`cmty_plan_datasd`) and U.S. Census TIGERweb Incorporated Places (Imperial Beach, GEOID 0636294), retrieved 2026-11-15. Points are thinned to about 9 m (39 KB file).
