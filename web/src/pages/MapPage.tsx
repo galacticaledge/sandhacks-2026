@@ -6,7 +6,8 @@ import { Legend } from "../components/Legend";
 import { LevelBadge } from "../components/LevelBadge";
 import { PointChart } from "../components/PointChart";
 import { TonightStrip } from "../components/TonightStrip";
-import { fmtPpb, fmtTime, levelOf } from "../levels";
+import { Icon } from "../components/Icons";
+import { LEVELS, fmtPpb, fmtTime, levelOf, levelStyle } from "../levels";
 import type { Lang, Strings } from "../i18n";
 
 type Point = { lat: number; lon: number; valid_times: string[]; p10: number[]; p50: number[]; p90: number[] };
@@ -81,6 +82,11 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
           marker={point}
           onPick={pickAt}
         />
+        <div className="map-legend" aria-hidden="true">
+          {LEVELS.map((l) => (
+            <span key={l.key}><i style={{ background: l.color, color: l.ink }}>{l.icon}</i>{t[`range_${l.key}` as keyof Strings] as string}</span>
+          ))}
+        </div>
         {meta && (
           <div className="slider-bar">
             <button className="btn" onClick={() => setPlaying(!playing)} aria-pressed={playing}>{playing ? "❚❚ " + t.pause : "▶ " + t.play}</button>
@@ -97,46 +103,56 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
         )}
       </section>
       <aside className="side">
-        <form className="search" onSubmit={search}>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.search_placeholder} aria-label={t.search_placeholder} />
-          <button className="btn">{t.search}</button>
+        <form className="fc-search side-search" onSubmit={search} role="search">
+          <label className="fc-input">
+            <Icon name="search" size={18} />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.search_short} aria-label={t.search_placeholder} />
+          </label>
+          <button className="btn-grape">{t.search}</button>
         </form>
-        {pickErr && <p className="warn">{pickErr}</p>}
+        {pickErr && <p className="warn small">{pickErr}</p>}
         {point ? (
-          <div className="card">
-            <div className="card-head">
-              <h3>{t.point_title}</h3>
-              <button className="link" onClick={() => setPoint(null)}>{t.close}</button>
+          <section className="panel">
+            <div className="panel-row">
+              <h3 className="panel-h">{t.point_title}</h3>
+              <button className="link small" onClick={() => setPoint(null)}>{t.close}</button>
             </div>
-            <p className="muted small">{point.lat.toFixed(4)}, {point.lon.toFixed(4)} · {t.peak}: {fmtPpb(Math.max(...point.p50))} ppb · {t.peak_high}: {fmtPpb(Math.max(...point.p90))} ppb</p>
-            <PointChart times={point.valid_times} s={point} t={t} lang={lang} />
             <div className="badges">
-              <span>{t.median}: <LevelBadge level={levelOf(Math.max(...point.p50))} t={t} /></span>
-              <span>{t.high_est}: <LevelBadge level={levelOf(Math.max(...point.p90))} t={t} /></span>
+              <span><span className="muted small">P50</span> <LevelBadge level={levelOf(Math.max(...point.p50))} t={t} small /> <strong>{fmtPpb(Math.max(...point.p50))}</strong> <span className="muted small">ppb</span></span>
+              <span><span className="muted small">P90</span> <LevelBadge level={levelOf(Math.max(...point.p90))} t={t} small /> <strong>{fmtPpb(Math.max(...point.p90))}</strong> <span className="muted small">ppb</span></span>
             </div>
-          </div>
+            <PointChart times={point.valid_times} s={point} t={t} lang={lang} height={180} />
+            <p className="tile-sub">{point.lat.toFixed(4)}, {point.lon.toFixed(4)}</p>
+          </section>
         ) : (
-          <p className="hint">{t.click_hint}</p>
+          <p className="side-hint"><Icon name="live" size={16} />{t.click_hint}</p>
         )}
-        <div className="card">
-          <h3>{t.monitors} <span className="muted small">({t.readings})</span></h3>
-          <ul className="mon-list">
-            {(now?.monitors ?? []).map((m) => (
-              <li key={m.site_id}>
-                <span>{m.name}</span>
-                <span className="mon-val"><LevelBadge level={m.level} t={t} small /> {fmtPpb(m.ppb)} ppb</span>
-                <span className="muted small">{m.observed_at && fmtTime(m.observed_at, lang, true)}</span>
-              </li>
-            ))}
+        <section className="panel">
+          <h3 className="panel-h">{t.monitors} <span>{t.readings}</span></h3>
+          <ul className="mon-rows">
+            {(now?.monitors ?? []).map((m) => {
+              const l = levelStyle(m.level);
+              return (
+                <li key={m.site_id} title={m.name}>
+                  <span className="now-swatch" style={{ background: l?.color ?? "#777", color: l?.ink }}
+                    aria-label={l ? (t[`level_${l.key}` as keyof Strings] as string) : "–"}>{l?.icon ?? "○"}</span>
+                  <span className="mon-name">{m.name.replace(/ \(.*\)/, "")}<small>{m.observed_at ? fmtTime(m.observed_at, lang, true) : "–"}</small></span>
+                  <span className="mon-ppb"><strong>{fmtPpb(m.ppb)}</strong><small>ppb</small></span>
+                </li>
+              );
+            })}
           </ul>
-        </div>
-        {meta && <InputsCard inputs={meta.inputs} hour={hour} t={t} />}
-        <Legend t={t} />
-        <ul className="key">
-          <li><span className="src src-main inline">☣</span> {t.hotspot}</li>
-          <li><span className="src inline" /> {t.sources}</li>
-          <li><span className="dot inline" /> {t.complaints}</li>
-        </ul>
+        </section>
+        {meta && vt && <InputsCard inputs={meta.inputs} hour={hour} t={t} title={`${t.conditions} · ${fmtTime(vt, lang, true)}`} />}
+        <details className="panel fold">
+          <summary>{t.map_key}</summary>
+          <ul className="key">
+            <li><span className="src src-main inline">☣</span> {t.hotspot}</li>
+            <li><span className="src inline" /> {t.sources}</li>
+            <li><span className="dot inline" /> {t.complaints}</li>
+          </ul>
+          <Legend t={t} />
+        </details>
       </aside>
     </div>
     </>

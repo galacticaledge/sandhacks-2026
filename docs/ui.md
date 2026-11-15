@@ -41,7 +41,13 @@ The forecast level colors are **not** themed. They stay the SDAPCD green/yellow/
 - **Map legend** overlay (SDAPCD ranges) at the bottom-left of the map. It is hidden on phones.
 - **Search field:** lighter, smaller placeholder (400 weight, 45% opacity, 16px).
 - **Polish:** soft grape/stone background glow, frosted (blurred) pills and slider over the map, cards fade in and lift on hover, all disabled under `prefers-reduced-motion`.
-- **Live Map** (`#/live`, old `#/map` redirects here): the previous full map with monitor readings and model inputs.
+- **Live Map** (`#/live`, old `#/map` redirects here): full map with the same level legend overlay as Forecast. The side panel is split into quiet sections with small uppercase headers:
+  - Search (same style as Forecast).
+  - Spot forecast: P50/P90 badges with values, then the chart.
+  - Monitors: shape-coded level swatch, name with time underneath, big ppb value.
+  - Conditions at the slider hour: a 2x2 grid of wind, air (still or mixing), temperature and river flow. Calibration and ensemble sit under a "Model details" fold.
+  - Map key fold: river sources, complaints and the full SDAPCD legend.
+  - The conditions card (`InputsCard`) is shared with Replay.
 - **Tonight** full table (`#/tonight`): linked from the Forecast card. **About** (`#/about`): linked from Settings.
 - **Settings**: language, theme (Dark default per Figma / Light / System), official links.
 

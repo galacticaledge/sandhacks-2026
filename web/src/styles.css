@@ -371,3 +371,50 @@ main > * > *:nth-child(2) { animation-delay: .05s; } main > * > *:nth-child(3) {
 @keyframes spin { to { --a: 360deg; } }
 .sidebar nav a.active .nav-icon { box-shadow: 0 0 0 4px rgba(167, 135, 203, .18), 0 0 18px rgba(167, 135, 203, .45); }
 @media (prefers-reduced-motion: reduce) { .hero::before, .gauge .needle { animation: none; } .wind-arrow { transition: none; } }
+
+/* ---- Live Map side panel: quieter sections, big numbers, details fold away ---- */
+.side { gap: 14px; padding-right: 2px; }
+.side-search { gap: 8px; flex-wrap: nowrap; }
+.side-search .fc-input { flex: 1; height: 46px; border-radius: 15px; padding: 0 14px; gap: 10px; }
+.side-search .fc-input input { font-size: .92rem; }
+.side-search .btn-grape { height: 46px; padding: 0 18px; border-radius: 15px; font-size: .9rem; }
+.side-hint { display: flex; gap: 10px; align-items: flex-start; margin: 0; padding: 0 4px; font-size: .82rem; line-height: 1.45; color: var(--muted); }
+.side-hint svg { flex: none; margin-top: 2px; color: var(--lavender); }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.panel-h { margin: 0; font-size: .72rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--olive); }
+[data-theme="light"] .panel-h { color: var(--muted); }
+.panel-h span { letter-spacing: 0; text-transform: none; font-weight: 400; margin-left: 4px; opacity: .8; }
+.panel-row { display: flex; justify-content: space-between; align-items: center; }
+.panel .badges { margin: 0; gap: 8px 16px; }
+.panel .badges strong { font-size: 1.05rem; }
+.mon-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.mon-rows li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 0; border-top: 1px solid var(--border); }
+.mon-rows li:first-child { border-top: 0; padding-top: 0; }
+.mon-rows li:last-child { padding-bottom: 0; }
+.mon-rows .now-swatch { width: 22px; height: 22px; border-radius: 7px; font-size: 10px; }
+.mon-name { display: flex; flex-direction: column; font-size: .9rem; font-weight: 500; line-height: 1.25; min-width: 0; }
+.mon-name small { font-size: .72rem; color: var(--muted); font-weight: 400; }
+.mon-ppb { display: flex; align-items: baseline; gap: 3px; font-variant-numeric: tabular-nums; }
+.mon-ppb strong { font-size: 1.25rem; }
+.mon-ppb small { font-size: .72rem; color: var(--muted); }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tile { background: var(--panel-2); border: 1px solid transparent; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tile-hi { border-color: rgba(167, 135, 203, .5); background: rgba(167, 135, 203, .14); }
+.tile-k { display: inline-flex; align-items: center; gap: 6px; font-size: .72rem; color: var(--muted); }
+.tile-k svg { color: var(--lavender); }
+[data-theme="light"] .tile-k svg { color: var(--grape); }
+.tile strong { font-size: 1.1rem; line-height: 1.3; }
+.tile strong small { font-size: .72rem; font-weight: 500; color: var(--muted); }
+.tile-sub { display: block; font-size: .72rem; color: var(--muted); margin: 0; }
+.fold > summary { cursor: pointer; font-size: .8rem; font-weight: 600; color: var(--accent); list-style: none; display: flex; align-items: center; gap: 6px; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary::before { content: "›"; display: inline-block; transition: transform .15s; font-size: 1rem; line-height: 1; }
+.fold[open] > summary::before { transform: rotate(90deg); }
+.fold dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 10px 0 0; font-size: .84rem; }
+.fold dt { color: var(--muted); }
+.fold dd { margin: 0; }
+details.panel.fold { gap: 0; }
+details.panel.fold[open] > summary { margin-bottom: 12px; }
+.panel .legend { border: 0; padding: 0; background: transparent; margin-top: 12px; }
+.panel .key { margin: 0; }
+@media (max-width: 760px) { .side-search .fc-input { flex: none; height: 46px; } }
