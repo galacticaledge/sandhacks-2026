@@ -121,7 +121,7 @@ One section below the map with a single heading ("Tonight by place") and the run
 ## Forecast: predicted concentration zones
 
 - **Map gets ~72% of the stage width** (measured at 1440px). Place details and the ranking moved into a collapsible side panel with two tabs, "Selected place" and "Tonight's ranking". "Hide panel" gives the map the full width, and the panel starts closed on screens under 1100px. Clicking a place on the map or in the ranking opens the "Selected place" tab.
-- **Zones, not dots**: the Forecast map draws the model's predicted concentrations as translucent filled polygons with outlines (green 1–5, yellow 5–30, orange 30–200, purple 200+ ppb), for the selected hour and for the median or high estimate. The pixel heatmap is no longer used on this map; Live Map and Replay still use it.
+- **Zones, not dots**: the Forecast map draws the model's predicted concentrations as translucent filled polygons with outlines (green 1–5, yellow 5–30, orange 30–200, purple 200+ ppb), for the selected hour and for the median or high estimate. Live Map and Replay's "Forecast (5 PM)" map use the same zones (see "Zones everywhere" below).
 - The zones come from `GET /api/forecast/{run_id}/zones/{hour}.geojson?pct=p50|p90` (`api/zones.py`). The endpoint traces filled contours of the stored model grid (24 × 144 × 206, 50 m cells) with `contourpy` at the SDAPCD thresholds. Shapes appear only where the model predicts them: no smoothing, no buffers, no shapes drawn around monitors, and no AI involvement. Tests are in `api/test_zones.py`.
 - **Places** are small labelled points drawn by the map itself, with the level as the ring color, a grape ring when selected, and labels that hide automatically when they would collide. **Monitor readings** stay as the measured pins on top.
 - **Legend** (bottom-left): "Predicted zones (median/high estimate)" with translucent swatches. Short labels are used on phones; the measured-pin key shows only on wide screens.
@@ -134,3 +134,15 @@ All maps (Forecast, Live Map, Replay) share `ForecastMap`:
 - Everything outside San Diego County (Tijuana, neighboring counties, open ocean) is washed out with Stone Brown at 55%. The county line is a thin dashed Stone Brown line.
 - The boundary is the official Census polygon (`web/public/sd-county.geojson`, 1,284 points, about 28 KB), not a hand-drawn border. It follows the international border at about 32.534° N in the South Bay.
 - The wash sits above the forecast zones, so the small part of the model grid south of the border is faded too.
+
+## Zones everywhere
+
+- Every forecast map draws the predicted concentration zones from `/api/forecast/{run}/zones/{hour}.geojson`:
+  - Forecast (median or high estimate)
+  - Live Map (median or high estimate, every hour preloaded so Play is smooth)
+  - Replay's "Forecast (5 PM)" map (median for the replayed run)
+- The PNG heatmap endpoint still exists in the API but is no longer used by the web app.
+- One shared legend, `components/ZoneLegend.tsx`, with the same translucent swatches and outlines as the polygons:
+  - Forecast: overlay at the map's bottom-left, with the measured-pin sample.
+  - Live Map: in the key row under the map.
+  - Replay: under the two maps, with samples for the measured pin and the dashed "≈" forecast-at-a-monitor pin.

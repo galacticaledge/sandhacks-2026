@@ -7,6 +7,7 @@ import { PointChart } from "../components/PointChart";
 import { TonightStrip } from "../components/TonightStrip";
 import { Icon } from "../components/Icons";
 import { PanelHead } from "../components/PanelHead";
+import { ZoneLegend } from "../components/ZoneLegend";
 import { LEVELS, fmtPpb, fmtTime, levelOf, levelStyle } from "../levels";
 import type { Lang, Strings } from "../i18n";
 
@@ -39,10 +40,10 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
     return () => clearInterval(id);
   }, [playing, meta]);
 
-  // preload overlays so the slider is smooth
+  // warm the browser cache with every hour's zones so the slider and Play are smooth
   useEffect(() => {
     if (!meta) return;
-    meta.valid_times.forEach((_, h) => { const i = new Image(); i.src = `/api/forecast/${meta.run_id}/grid/${h}.png?pct=${pct}`; });
+    meta.valid_times.forEach((_, h) => { fetch(`/api/forecast/${meta.run_id}/zones/${h}.geojson?pct=${pct}`).catch(() => {}); });
   }, [meta, pct]);
 
   const pickAt = async (lat: number, lon: number) => {
@@ -75,7 +76,8 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
       <section className="map-main live-card" aria-label={t.nav_map}>
         <div className="live-map">
           <ForecastMap
-            overlayUrl={meta ? `/api/forecast/${meta.run_id}/grid/${hour}.png?pct=${pct}` : null}
+            overlayUrl={null}
+            zonesUrl={meta ? `/api/forecast/${meta.run_id}/zones/${hour}.geojson?pct=${pct}` : null}
             bounds={meta?.grid?.bounds ?? null}
             monitors={monitors}
             sources={(now as unknown as { sources?: MapSource[] })?.sources}
@@ -103,11 +105,7 @@ export function MapPage({ t, lang, now }: { t: Strings; lang: Lang; now: Now | n
             </div>
           )}
           <div className="key-row">
-            <div className="key-group">
-              <span className="key-k">{t.key_forecast}</span>
-              <span className="key-ramp" aria-hidden="true">{LEVELS.map((l) => <i key={l.key} style={{ background: l.color }} />)}</span>
-              <span className="key-ticks">{LEVELS.map((l) => <span key={l.key}>{l.min}</span>)}<span>ppb</span></span>
-            </div>
+            <ZoneLegend t={t} pct={pct} className="key-group zl-inline" />
             <div className="key-group">
               <span className="key-k">{t.key_measured}</span>
               <span className="mon mon-meas inline"><i style={{ background: LEVELS[0].color, color: LEVELS[0].ink }}>{LEVELS[0].icon}</i><b>0.7</b><small>ppb</small></span>

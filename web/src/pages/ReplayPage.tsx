@@ -6,6 +6,7 @@ import { PointChart } from "../components/PointChart";
 import { Reports } from "../components/Reports";
 import { Icon } from "../components/Icons";
 import { Select } from "../components/Select";
+import { ZoneLegend } from "../components/ZoneLegend";
 import { fmtClock, fmtPpb, fmtTime } from "../levels";
 import type { Lang, Strings } from "../i18n";
 
@@ -152,10 +153,13 @@ export function ReplayPage({ t, lang }: { t: Strings; lang: Lang }) {
             </div>
           </div>
           {rep.has_grid ? (
+            <>
             <div className="split">
-              <ForecastMap height={380} label={`${t.forecast} (${fmtTime(rep.issued_at, lang)})`} overlayUrl={bounds ? `/api/forecast/${rep.run_id}/grid/${hour}.png?pct=p50` : null} bounds={bounds} monitors={fcMon} monitorKind="forecast" />
+              <ForecastMap height={380} label={`${t.forecast} (${fmtTime(rep.issued_at, lang)})`} overlayUrl={null} zonesUrl={`/api/forecast/${rep.run_id}/zones/${hour}.geojson?pct=p50`} bounds={bounds} monitors={fcMon} monitorKind="forecast" />
               <ForecastMap height={380} label={t.observed} overlayUrl={null} bounds={null} monitors={obsMon} />
             </div>
+            <ZoneLegend t={t} pct="p50" measured forecastPin className="zl-inline replay-key" />
+            </>
           ) : <p className="muted">{t.replay_no_map}</p>}
           <h2>{t.replay_monitors_h}</h2>
           <div className="chart-grid">

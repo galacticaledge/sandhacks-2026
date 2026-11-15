@@ -6,6 +6,7 @@ import { Icon } from "../components/Icons";
 import { LevelBadge } from "../components/LevelBadge";
 import { PointChart } from "../components/PointChart";
 import { Spark } from "../components/Spark";
+import { ZoneLegend } from "../components/ZoneLegend";
 import { LEVELS, fmtPpb, fmtTime, levelOf, levelStyle } from "../levels";
 import type { Lang, Strings } from "../i18n";
 
@@ -13,7 +14,6 @@ type Tonight = { run_id: string; run_kind: string; issued_at: string; items: Ton
 type Kind = "all" | "neighborhood" | "school" | "monitor";
 type Picked = { id?: string; name: string; lat: number; lon: number; times: string[]; s: Series };
 
-const ZSHORT: Record<Level, string> = { green: "<5", yellow: "5–30", orange: "30+", review: "200+ ppb" };
 const rank = (l: Level | null | undefined) => LEVELS.findIndex((x) => x.key === l);
 
 // Matches the Figma "Smellcast Forecast" frame: address search, map card with filter pills, detail cards below.
@@ -211,13 +211,7 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
           marker={picked && !picked.id ? picked : null}
           onPick={(la, lo) => pickAt(la, lo)}
         />
-        <div className="map-legend zone-legend">
-          <span className="zl-title">{pct === "p50" ? t.zones_title_p50 : t.zones_title_p90}:</span>
-          {LEVELS.map((l) => (
-            <span key={l.key}><i className={`zl-sw zl-${l.key}`} aria-hidden="true" /><span className="zl-long">{t[`range_${l.key}` as keyof Strings] as string}</span><span className="zl-short">{ZSHORT[l.key]}</span></span>
-          ))}
-          <span className="zl-meas"><span className="mon mon-meas inline" aria-hidden="true"><i style={{ background: LEVELS[0].color }} /><b>0.7</b></span>{t.key_measured}</span>
-        </div>
+        <ZoneLegend t={t} pct={pct} measured className="map-legend" />
         {meta && (
           <div className="slider-bar">
             <div className="slider-col">

@@ -824,3 +824,14 @@ h3, .card h3, .chart-card h3, .detail-head h2, .rank .detail-head h2, .legend-ti
 @media (max-width: 760px) { .zone-legend .zl-long { display: none; } .zone-legend .zl-short { display: inline; } }
 .zone-legend .zl-short { display: none; }
 @media (max-width: 760px) { .zone-legend .zl-long { display: none; } .zone-legend .zl-short { display: inline; } }
+
+/* zone legend as an inline row (Live Map key row, under Replay maps): same swatches as the map overlay */
+.zone-legend.zl-inline { position: static; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; width: auto; max-width: none;
+  padding: 0; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; color: var(--muted); font-size: 12px; }
+.zone-legend.zl-inline > span { display: inline-flex; align-items: center; gap: 5px; }
+.zone-legend.zl-inline .zl-title { color: var(--olive); font-weight: 400; }
+.zone-legend.zl-inline .zl-meas { border-left-color: var(--card-line); display: inline-flex !important; }
+.replay-key { margin: 10px 4px 0; }
+@media (max-width: 760px) { .zone-legend.zl-inline { display: flex; } }
+.mon-fc.inline { position: relative; font-size: 11px; padding: 2px 6px 2px 2px; border-width: 1.5px; } .mon-fc.inline i { width: 12px; height: 12px; }
+.zone-legend .mon-fc.inline { color: var(--ink); border-color: var(--lavender); }
