@@ -3,7 +3,6 @@ import { get, type Level, type Meta, type Now, type Series, type TonightItem } f
 import { ForecastMap, type MapPlace, type MapSource } from "../components/ForecastMap";
 import { Gauge } from "../components/Gauge";
 import { Icon } from "../components/Icons";
-import { Legend } from "../components/Legend";
 import { LevelBadge } from "../components/LevelBadge";
 import { PointChart } from "../components/PointChart";
 import { Spark } from "../components/Spark";
@@ -83,6 +82,7 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
   const vt = meta?.valid_times[hour];
   const met = meta?.inputs.met;
   const pItem = picked?.id ? tonight?.items.find((x) => x.id === picked.id) : undefined;
+  const rankOf = picked?.id ? items.findIndex((x) => x.id === picked.id) : -1;
   const peak50 = picked ? Math.max(...picked.s.p50) : null;
   const peak90 = picked ? Math.max(...picked.s.p90) : null;
   // highest median across all places, per hour: drives the summary strip
@@ -223,61 +223,69 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
         </div>
       </section>
 
-      <div className="fc-bottom">
-        <section className="card-xl detail" aria-live="polite">
-          {picked ? (
-            <>
-              <div className="detail-head">
-                <div>
-                  <h2>{picked.name}</h2>
-                  <p className="muted small">{t.point_title}</p>
+      <section className="fc-places" aria-label={t.places_h}>
+        <header className="fc-places-head">
+          <h2>{t.places_h}</h2>
+          <p className="small muted">{t.run_note}</p>
+        </header>
+        <div className="fc-bottom">
+          <section className="card-xl detail" aria-live="polite">
+            {picked ? (
+              <>
+                <header className="panel-head">
+                  <span className="panel-icon"><Icon name="peak" size={15} /></span>
+                  <h3>{picked.name}</h3>
+                  {rankOf >= 0 && <span className="panel-meta">{t.rank_of.replace("{n}", String(rankOf + 1)).replace("{m}", String(items.length))}</span>}
+                </header>
+                <div className="detail-sub">
+                  <span className="small muted">{t.point_title}</span>
+                  <div className="badges">
+                    <span title={t.median}><span className="muted small">P50</span> <LevelBadge level={pItem?.level ?? levelOf(peak50)} t={t} small /></span>
+                    <span title={t.high_est}><span className="muted small">P90</span> <LevelBadge level={pItem?.level_p90 ?? levelOf(peak90)} t={t} small /></span>
+                  </div>
                 </div>
-                <div className="badges">
-                  <span title={t.median}><span className="muted small">P50</span> <LevelBadge level={pItem?.level ?? levelOf(peak50)} t={t} small /></span>
-                  <span title={t.high_est}><span className="muted small">P90</span> <LevelBadge level={pItem?.level_p90 ?? levelOf(peak90)} t={t} small /></span>
+                <div className="stats">
+                  <div><span><Icon name="peak" size={14} />{t.peak}</span><strong>{fmtPpb(pItem?.peak_p50 ?? peak50)} <small>ppb</small></strong></div>
+                  <div><span><Icon name="high" size={14} />{t.peak_high}</span><strong>{fmtPpb(pItem?.peak_p90 ?? peak90)} <small>ppb</small></strong></div>
+                  {pItem?.peak_time && <div><span><Icon name="clock" size={14} />{t.peak_hour}</span><strong>{fmtTime(pItem.peak_time, lang, true)}</strong></div>}
+                  {pItem?.confidence && <div><span><Icon name="shield" size={14} />{t.confidence}</span><strong>{t[`conf_${pItem.confidence}` as keyof Strings] as string}</strong></div>}
                 </div>
-              </div>
-              <div className="stats">
-                <div><span><Icon name="peak" size={14} />{t.peak}</span><strong>{fmtPpb(pItem?.peak_p50 ?? peak50)} <small>ppb</small></strong></div>
-                <div><span><Icon name="high" size={14} />{t.peak_high}</span><strong>{fmtPpb(pItem?.peak_p90 ?? peak90)} <small>ppb</small></strong></div>
-                {pItem?.peak_time && <div><span><Icon name="clock" size={14} />{t.peak_hour}</span><strong>{fmtTime(pItem.peak_time, lang, true)}</strong></div>}
-                {pItem?.confidence && <div><span><Icon name="shield" size={14} />{t.confidence}</span><strong>{t[`conf_${pItem.confidence}` as keyof Strings] as string}</strong></div>}
-              </div>
-              <PointChart times={picked.times} s={picked.s} t={t} lang={lang} height={190} />
-              <p className="muted small">{t.uncertainty}</p>
-              {pItem?.guidance && (
-                <details className="guidance">
-                  <summary>{t.sdapcd_says}</summary>
-                  <p>{pItem.guidance.expect}</p>
-                  <ul>{pItem.guidance.actions.map((a) => <li key={a}>{a}</li>)}</ul>
-                </details>
-              )}
-            </>
-          ) : <p className="muted">{t.pick_place}</p>}
-        </section>
+                <PointChart times={picked.times} s={picked.s} t={t} lang={lang} height={220} />
+                <p className="muted small">{t.uncertainty}</p>
+                {pItem?.guidance && (
+                  <details className="guidance">
+                    <summary>{t.sdapcd_says}</summary>
+                    <p>{pItem.guidance.expect}</p>
+                    <ul>{pItem.guidance.actions.map((a) => <li key={a}>{a}</li>)}</ul>
+                  </details>
+                )}
+              </>
+            ) : <p className="muted">{t.pick_place}</p>}
+          </section>
 
-        <section className="card-xl rank">
-          <div className="detail-head">
-            <h2>{t.tonight_rank}</h2>
-            <a href="#/tonight" className="small">{t.full_table} →</a>
-          </div>
-          <ul className="rank-list">
-            {items.slice(0, 8).map((r) => (
-              <li key={r.id}>
-                <button className={picked?.id === r.id ? "on" : ""} onClick={() => selectPlace(r.id)}>
-                  <span className="rank-name">{r.name}<small>{r.kind === "school" ? t.school : r.kind === "monitor" ? t.monitor : t.neighborhood}</small></span>
-                  <LevelBadge level={r.level} t={t} small />
-                  <Spark values={meta?.series[r.id]?.p50 ?? []} width={48} />
-                  <span className="rank-val"><span>{fmtPpb(r.peak_p50)} <small>ppb</small></span><small>P90 {fmtPpb(r.peak_p90)}</small></span>
-                </button>
-              </li>
-            ))}
-            {tonight && items.length === 0 && <li className="muted small">{t.no_match}</li>}
-          </ul>
-          <p className="muted small">{t.run_note}</p>
-          <Legend t={t} />
-        </section>
-      </div>
+          <section className="card-xl rank">
+            <header className="panel-head">
+              <span className="panel-icon"><Icon name="accuracy" size={15} /></span>
+              <h3>{t.tonight_rank}</h3>
+              <a href="#/tonight" className="panel-link">{t.full_table} →</a>
+            </header>
+            <ul className="rank-list">
+              {items.map((r, i) => (
+                <li key={r.id}>
+                  <button className={picked?.id === r.id ? "on" : ""} aria-current={picked?.id === r.id ? "true" : undefined} onClick={() => selectPlace(r.id)}>
+                    <span className="rank-n">{i + 1}</span>
+                    <span className="rank-name">{r.name}<small>{r.kind === "school" ? t.school : r.kind === "monitor" ? t.monitor : t.neighborhood}{picked?.id === r.id ? ` · ${t.showing}` : ""}</small></span>
+                    <LevelBadge level={r.level} t={t} small />
+                    <Spark values={meta?.series[r.id]?.p50 ?? []} width={44} />
+                    <span className="rank-val"><span>{fmtPpb(r.peak_p50)} <small>ppb</small></span><small>P90 {fmtPpb(r.peak_p90)}</small></span>
+                  </button>
+                </li>
+              ))}
+              {tonight && items.length === 0 && <li className="muted small">{t.no_match}</li>}
+            </ul>
+          </section>
+        </div>
+      </section>
       <p className="muted small">{t.never_safe}</p>
     </div>
   );

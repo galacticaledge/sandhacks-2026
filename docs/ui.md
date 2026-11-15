@@ -110,3 +110,10 @@ Data numbers (stat tiles, monitor ppb, gauge value) and navigation keep their ow
 - Measured monitor pins are anchored at the bottom: the pointer marks the exact site and the body sits above it, drawn above place markers, so readings are never covered.
 - The risk legend (compact) and a single-row time bar both sit at the bottom-left, at most 560px wide, leaving the river and plume area uncovered. On phones the P50/P90 switch hides and the time bar sits above the map credits.
 - Toolbar filters are compact: a 32px risk dropdown plus one segmented control for All areas, Neighborhoods, Schools and Monitors.
+
+## Forecast: "Tonight by place"
+
+One section below the map with a single heading ("Tonight by place") and the run note, then a 2-column layout:
+- **Left**: the selected place. It has a shared panel header with its rank ("#4 of 20 tonight"), the P50/P90 badges, stat tiles, a 220px chart, the uncertainty note and the SDAPCD guidance fold.
+- **Right**: the full ranked list with the same panel header and a "Full table" link. It takes the left card's height and scrolls inside it. Rows show the rank number, the name (one line), the kind, the level, a sparkline and the median with P90. The selected row has a lavender edge bar and "showing" under its name.
+- Below 1100px the columns stack and the list is capped at 420px. The duplicate SDAPCD legend was removed from this card; it stays on the map.
