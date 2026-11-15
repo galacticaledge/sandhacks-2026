@@ -850,3 +850,22 @@ h3, .card h3, .chart-card h3, .detail-head h2, .rank .detail-head h2, .legend-ti
 .layer-seg button.on .lyr-monitors { border-color: #fff; }
 .lyr-count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--lavender); color: #2a2135; font-size: 11px; font-weight: 700; display: inline-grid; place-items: center; }
 @media (max-width: 760px) { .layer-seg button { padding: 0 10px; } }
+
+/* ---- Forecast summary: SDAPCD's words on the level, and a quieter hour column ---- */
+.sdapcd-note { margin: 6px 0 0; padding: 8px 12px; border-left: 3px solid var(--lavender); border-radius: 0 10px 10px 0;
+  background: rgba(47, 47, 47, .35); font-size: 14px; line-height: 1.5; color: var(--ink); }
+[data-theme="light"] .sdapcd-note { background: rgba(255, 255, 255, .6); }
+.sdapcd-note span { display: block; font-size: 12px; color: var(--olive); margin-bottom: 2px; }
+.hero-verdict .hero-level { font-size: 18px; padding: 2px 12px; }
+.hero-verdict .hero-orange { margin-top: 2px !important; }
+.conds-quiet { gap: 4px 14px; flex-wrap: wrap; }
+.conds-quiet .cond { padding: 0; border: 0; background: none; font-weight: 500; color: var(--muted); }
+.conds-quiet .cond.cond-still { background: none; color: var(--lavender); }
+[data-theme="light"] .conds-quiet .cond.cond-still { color: var(--grape); }
+.conds-quiet .cond svg { color: var(--olive); }
+.hero-hours { justify-content: center; gap: 10px; }
+.hero-hours { justify-content: flex-start; }
+.hero-hours .hstrip { margin-top: 6px; }
+.hero { grid-template-columns: minmax(0, 1.15fr) minmax(300px, 1fr) minmax(0, 1.25fr); }
+@media (max-width: 1250px) { .hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 640px) { .hero { grid-template-columns: 1fr; } }

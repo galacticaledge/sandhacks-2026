@@ -161,3 +161,14 @@ The risk-level dropdown stays. The area-type choice became four independent on/o
 - The ranking list follows the toggles (schools, neighborhood points and monitors are listed only when their toggle is on).
 - About the boundaries: the named neighborhoods (Nestor, Egger Highlands, Palm City, Otay Mesa West) have no official boundaries of their own. They sit inside the Otay Mesa-Nestor planning area, which the map outlines. Each area in the file lists the neighborhoods and receptors inside it.
 - Area sources: City of San Diego Community Planning Districts (`cmty_plan_datasd`) and U.S. Census TIGERweb Incorporated Places (Imperial Beach, GEOID 0636294), retrieved 2026-11-15. Points are thinned to about 9 m (39 KB file).
+
+## Forecast summary: SDAPCD note and quieter hour column
+
+(The "Where could sewer gas affect people tonight?" redesign was tried and not adopted; the three-section summary stays.)
+
+- **Tonight section**: under "No orange level forecast tonight", a short quote of what SDAPCD says about tonight's highest level, taken from the guidance text `/api/tonight` returns for that place. It has a lavender left edge and the label "SDAPCD on this level".
+- **Hour by hour section**:
+  - The explanatory sentence moved into the strip's tooltip and screen-reader label.
+  - The condition chips (wind, temperature, still/mixing air, river flow) are one plain line of icons and values, with no boxes. "Still air" stays lavender.
+  - The section label is aligned to the top like the others.
+- The tonight section is slightly wider, so the quote fits on two lines at desktop width.

@@ -127,6 +127,12 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
                 ? t.strip_orange.replace("{n}", String(nLikely + nPossible)).replace("{m}", String(placesTonight.length)).replace("{a}", String(nLikely)).replace("{b}", String(nPossible))
                 : t.strip_none}
             </p>
+            {worst.guidance?.expect && (
+              <blockquote className="sdapcd-note">
+                <span>{t.sdapcd_level_says}</span>
+                {worst.guidance.expect}
+              </blockquote>
+            )}
           </div>
 
           <div className="hero-sec hero-peak">
@@ -144,7 +150,7 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
           {meta && (
             <div className="hero-sec hero-hours">
               <span className="eyebrow">{t.hour_by_hour}</span>
-              <div className="hstrip" role="group" aria-label={t.hour}>
+              <div className="hstrip" role="group" aria-label={`${t.hour}. ${t.strip_note}`} title={t.strip_note}>
                 <div className="hstrip-bars">
                   {regionMax.map((v, h) => {
                     const l = levelStyle(levelOf(v));
@@ -161,7 +167,7 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
                 </div>
               </div>
               {met && vt && (
-                <div className="conds" aria-label={`${t.cond_at} ${fmtTime(vt, lang, true)}`}>
+                <div className="conds conds-quiet" aria-label={`${t.cond_at} ${fmtTime(vt, lang, true)}`}>
                   <strong className="conds-time">{fmtTime(vt, lang, true)}</strong>
                   <span className="cond" title={t.wind}>
                     <span className="wind-arrow" style={{ transform: `rotate(${(met.wind_dir_deg[hour] ?? 0) + 180}deg)` }} aria-hidden="true"><Icon name="arrow" size={14} /></span>
@@ -174,7 +180,6 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
                   <span className="cond" title={t.river_flow}><Icon name="wave" size={14} />{meta.inputs.flow_mgd[hour]} MGD</span>
                 </div>
               )}
-              <small className="muted">{t.strip_note}</small>
             </div>
           )}
         </section>
