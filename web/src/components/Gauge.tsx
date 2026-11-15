@@ -22,12 +22,12 @@ const arc = (f0: number, f1: number) => {
   return `M ${x0} ${y0} A ${R} ${R} 0 0 1 ${x1} ${y1}`;
 };
 
-export function Gauge({ p50, p90, label }: { p50: number; p90: number; label: string }) {
+export function Gauge({ p50, p90, label, compact }: { p50: number; p90: number; label: string; compact?: boolean }) {
   const f = gaugeFrac(p50), f90 = gaugeFrac(p90);
   const [nx, ny] = pt(f, R - 14);
   const [tx0, ty0] = pt(f90, R + 6), [tx1, ty1] = pt(f90, R - 6);
   return (
-    <figure className="gauge" aria-label={`${label}: ${fmtPpb(p50)} ppb (P90 ${fmtPpb(p90)} ppb)`}>
+    <figure className={`gauge${compact ? " gauge-compact" : ""}`} aria-label={`${label}: ${fmtPpb(p50)} ppb (P90 ${fmtPpb(p90)} ppb)`}>
       <svg viewBox="0 0 160 92" aria-hidden="true">
         <path d={arc(0, 1)} stroke="rgba(255,255,255,.08)" strokeWidth={14} fill="none" />
         {LEVELS.map((l, i) => (
@@ -40,8 +40,7 @@ export function Gauge({ p50, p90, label }: { p50: number; p90: number; label: st
       </svg>
       <figcaption>
         <strong>{fmtPpb(p50)}</strong> <small>ppb</small>
-        <span>{label}</span>
-        <span>P90 {fmtPpb(p90)} ppb</span>
+        {!compact && <><span>{label}</span><span>P90 {fmtPpb(p90)} ppb</span></>}
       </figcaption>
     </figure>
   );

@@ -24,7 +24,7 @@ The forecast level colors are **not** themed. They stay the SDAPCD green/yellow/
   - A "Monitors now" card: the three SDAPCD monitors with level swatch and ppb, last-update time, and a pulsing live dot that turns red if readings are more than 90 minutes old. It links to Live Map.
   - Lavender skyline and "San Diego, CA" at the bottom.
   - Responsive: below 1100px wide it collapses to icons; below 760px it becomes a sticky top icon bar; on screens under 820px tall the skyline is hidden.
-- **Disclaimer bar** on every page: experimental forecast, not an official advisory, with links to SDAPCD readings and alert sign-up, plus an EN/ES switch.
+- **Disclaimer bar** on every page (44px tall at all widths, from 320px phones up; the warning text is never truncated: below 1100px it uses a short form, below 520px the links shorten to "SDAPCD" and "Alerts", below 370px the EN/ES switch moves to Settings only): experimental forecast, not an official advisory, with links to SDAPCD readings and alert sign-up, plus an EN/ES switch.
 - **Forecast** (`#/forecast`, default, matches the frame):
   - Lavender address search.
   - Map card with pill filters. "Risk level" is a dropdown: all / yellow+ / orange+. The kind pills are All areas / Neighborhoods / Schools / Monitors.
@@ -41,7 +41,13 @@ The forecast level colors are **not** themed. They stay the SDAPCD green/yellow/
 - **Map legend** overlay (SDAPCD ranges) at the bottom-left of the map. It is hidden on phones.
 - **Search field:** lighter, smaller placeholder (400 weight, 45% opacity, 16px).
 - **Polish:** soft grape/stone background glow, frosted (blurred) pills and slider over the map, cards fade in and lift on hover, all disabled under `prefers-reduced-motion`.
-- **Live Map** (`#/live`, old `#/map` redirects here): the previous full map with monitor readings and model inputs.
+- **Live Map** (`#/live`, old `#/map` redirects here): full map with the same level legend overlay as Forecast. The side panel is split into quiet sections with small uppercase headers:
+  - Search (same style as Forecast).
+  - Spot forecast: P50/P90 badges with values, then the chart.
+  - Monitors: shape-coded level swatch, name with time underneath, big ppb value.
+  - Conditions at the slider hour: a 2x2 grid of wind, air (still or mixing), temperature and river flow. Calibration and ensemble sit under a "Model details" fold.
+  - Map key fold: river sources, complaints and the full SDAPCD legend.
+  - The conditions card (`InputsCard`) is shared with Replay.
 - **Tonight** full table (`#/tonight`): linked from the Forecast card. **About** (`#/about`): linked from Settings.
 - **Settings**: language, theme (Dark default per Figma / Light / System), official links.
 
@@ -56,3 +62,102 @@ The forecast level colors are **not** themed. They stay the SDAPCD green/yellow/
 - The frame's **"Cities"** pill became **Schools** and **Monitors**. Receptors in `data/receptors.geojson` are neighborhood / school / monitor, with no city field.
 - The frame has no Tonight or About nav item. Tonight is a P0 page, so it's reachable from the Forecast page's "Full table" link, and the top of its table is shown on Forecast.
 - The ranked list uses tonight's evening (5 PM) run. The map and chart use the latest run. The page says so ("run note").
+
+## Replay page layout
+
+- One controls bar: night picker and the "replayed with observed weather" note on the same row.
+- Alert section: heading, then "Show the alert for" directly underneath, then the email preview.
+- Monitor charts: 2-column grid at desktop widths (third monitor wraps to the next row), 1 column below 900px. Each card has aligned rows (title, one-line comparison, 280px chart, key).
+- All charts share round y-axis ticks (0, 10, 20, 30, ...) and a fixed axis width, so axes line up card to card. Small negative monitor readings (instrument noise) are plotted at 0, matching how they are displayed elsewhere.
+- The 30 ppb line is a 2px dashed orange line with a bold label, and it appears in each card's key.
+
+## Type scale
+
+Defined once at the end of `web/src/styles.css` (it overrides earlier sizes):
+
+| Role | Size | Weight | Notes |
+|---|---|---|---|
+| Page title (`.page > h1`, Forecast hero title) | 28px | 600 | uppercase, +0.02em tracking |
+| Section heading (`h2`) | 17px | 600 | |
+| Card title (`h3`, card `h2`, panel headers, legend title) | 15px | 600 | |
+| Body (`p`, `li`, `td`, lede, form labels) | 14px | 400 | |
+| Supporting (`.small`, captions, keys, table headers, chips, badges, field labels, sidebar card) | 12px | 400 | |
+
+Data numbers (stat tiles, monitor ppb, gauge value) and navigation keep their own sizes.
+
+## Dropdowns
+
+`components/Select.tsx`: a listbox that always opens directly below its button (max 320px, scrolls, and scrolls the page into view on small screens). Keyboard: arrows, Home/End, Enter/Space, Escape, type-ahead. Used for Replay's "Night of" and "Show the alert for". Classes use the `dd-` prefix (`.sel` is the selected map marker).
+
+## Live Map (current layout)
+
+- **Summary** (`TonightStrip`), three sections: (1) "Orange tonight?" with a big Yes/No and the likely/possible count; (2) highest forecast place with level, median ppb, time and P90; (3) actions (Tonight list, past spike) and the "low is not safe" note. Same rules as before: places only, worst level first.
+- **Map card**: the map sits inset with a "Forecast · time · P50/P90" tag. The basemap is faded (fill 0.55, lines 0.5, labels 0.7) on every map so the forecast and readings stand out. Zoom buttons are small, dark and tucked into the corner.
+- **Controls under the map, two layers**: (1) playback (round play button, time, slider, P50/P90); (2) key: shaded forecast ramp with 0/5/30/200 ppb, the measured-pin sample, river sources and complaints.
+- **Measured vs forecast markers** (`ForecastMap monitorKind`):
+  - "measured" (default): solid graphite pin with a white border and pointer, a level-shaped dot and the ppb.
+  - "forecast": translucent lavender, dashed grape border, italic, "≈" before the value. The Replay "Forecast (5 PM)" map uses this.
+- **Right panel**, same order: Any location (search + spot forecast), Monitors (measured), Conditions. Every card shares `PanelHead`: a Stone Brown icon tile, a 15px title and Grey Olive meta text. Tiles use a stone tint, and lavender stays for interactive and highlighted states.
+
+## Forecast page (current layout)
+
+- **Summary card, three sections**: (1) Tonight: "Expected peak level" with the level badge and the orange line, nothing else; (2) Highest forecast: compact gauge (median needle, P90 tick) beside stacked facts for place, peak hour and high estimate, each shown once; (3) Hour by hour: the clickable strip, then the condition chips for the selected hour (wind, temperature, still/mixing air, river flow) and a one-line explanation. On tablets section 3 drops to a full-width row; on phones all three stack.
+- **Map toolbar**: the address search and the filters (risk level, area type) are a header strip inside the map card, directly above the map, instead of a separate bar between the summary and the map. On phones the search is full width and the filter pills scroll sideways.
+
+## Forecast map readability
+
+- Place markers are 28px (32px on hover, 34px with a grape halo when selected) with a readable level symbol.
+- Measured monitor pins are anchored at the bottom: the pointer marks the exact site and the body sits above it, drawn above place markers, so readings are never covered.
+- The risk legend (compact) and a single-row time bar both sit at the bottom-left, at most 560px wide, leaving the river and plume area uncovered. On phones the P50/P90 switch hides and the time bar sits above the map credits.
+- Toolbar filters are compact: a 32px risk dropdown plus one segmented control for All areas, Neighborhoods, Schools and Monitors.
+
+## Forecast: "Tonight by place"
+
+One section below the map with a single heading ("Tonight by place") and the run note, then a 2-column layout:
+- **Left**: the selected place. It has a shared panel header with its rank ("#4 of 20 tonight"), the P50/P90 badges, stat tiles, a 220px chart, the uncertainty note and the SDAPCD guidance fold.
+- **Right**: the full ranked list with the same panel header and a "Full table" link. It takes the left card's height and scrolls inside it. Rows show the rank number, the name (one line), the kind, the level, a sparkline and the median with P90. The selected row has a lavender edge bar and "showing" under its name.
+- Below 1100px the columns stack and the list is capped at 420px. The duplicate SDAPCD legend was removed from this card; it stays on the map.
+
+## Forecast: predicted concentration zones
+
+- **Map gets ~72% of the stage width** (measured at 1440px). Place details and the ranking moved into a collapsible side panel with two tabs, "Selected place" and "Tonight's ranking". "Hide panel" gives the map the full width, and the panel starts closed on screens under 1100px. Clicking a place on the map or in the ranking opens the "Selected place" tab.
+- **Zones, not dots**: the Forecast map draws the model's predicted concentrations as translucent filled polygons with outlines (green 1–5, yellow 5–30, orange 30–200, purple 200+ ppb), for the selected hour and for the median or high estimate. Live Map and Replay's "Forecast (5 PM)" map use the same zones (see "Zones everywhere" below).
+- The zones come from `GET /api/forecast/{run_id}/zones/{hour}.geojson?pct=p50|p90` (`api/zones.py`). The endpoint traces filled contours of the stored model grid (24 × 144 × 206, 50 m cells) with `contourpy` at the SDAPCD thresholds. Shapes appear only where the model predicts them: no smoothing, no buffers, no shapes drawn around monitors, and no AI involvement. Tests are in `api/test_zones.py`.
+- **Places** are small labelled points drawn by the map itself, with the level as the ring color, a grape ring when selected, and labels that hide automatically when they would collide. **Monitor readings** stay as the measured pins on top.
+- **Legend** (bottom-left): "Predicted zones (median/high estimate)" with translucent swatches. Short labels are used on phones; the measured-pin key shows only on wide screens.
+- **Limit**: neighborhoods are single points in `data/receptors.geojson` (no boundaries), so the map does not shade whole neighborhoods. A zone over a neighborhood's point is what the ranking reports.
+
+## Map focus: San Diego County
+
+All maps (Forecast, Live Map, Replay) share `ForecastMap`:
+- The view is limited to the county's extent (`maxBounds` [-117.75, 32.42] to [-115.95, 33.60], `minZoom` 9). Maps still open on the South Bay at zoom 12.3.
+- Everything outside San Diego County (Tijuana, neighboring counties, open ocean) is washed out with Stone Brown at 55%. The county line is a thin dashed Stone Brown line.
+- The boundary is the official Census polygon (`web/public/sd-county.geojson`, 1,284 points, about 28 KB), not a hand-drawn border. It follows the international border at about 32.534° N in the South Bay.
+- The wash sits above the forecast zones, so the small part of the model grid south of the border is faded too.
+
+## Zones everywhere
+
+- Every forecast map draws the predicted concentration zones from `/api/forecast/{run}/zones/{hour}.geojson`:
+  - Forecast (median or high estimate)
+  - Live Map (median or high estimate, every hour preloaded so Play is smooth)
+  - Replay's "Forecast (5 PM)" map (median for the replayed run)
+- The PNG heatmap endpoint still exists in the API but is no longer used by the web app.
+- One shared legend, `components/ZoneLegend.tsx`, with the same translucent swatches and outlines as the polygons:
+  - Forecast: overlay at the map's bottom-left, with the measured-pin sample.
+  - Live Map: in the key row under the map.
+  - Replay: under the two maps, with samples for the measured pin and the dashed "≈" forecast-at-a-monitor pin.
+
+## Forecast map layers (toolbar)
+
+The risk-level dropdown stays. The area-type choice became four independent on/off toggles in the same segmented style, each with a small symbol matching what it draws:
+
+| Toggle | What it shows | Data |
+|---|---|---|
+| Impact zones | predicted gas concentration footprint (filled contours) for the hour and estimate on screen | `/api/forecast/{run}/zones/{h}.geojson` |
+| Monitors | actual sensor readings (measured pins) | `/api/now` |
+| Schools | school points; a school is highlighted (lavender halo, bold label, count badge on the toggle) when the model puts it inside a predicted zone (≥ 1 ppb) at that hour and estimate | `meta.series[id][pct][hour]`, the same grid the zones come from |
+| Neighborhoods | community area boundaries with labels: City of San Diego planning areas (Otay Mesa-Nestor, San Ysidro, Otay Mesa, Tijuana River Valley) and the City of Imperial Beach | `web/public/community-areas.geojson` |
+
+- The ranking list follows the toggles (schools, neighborhood points and monitors are listed only when their toggle is on).
+- About the boundaries: the named neighborhoods (Nestor, Egger Highlands, Palm City, Otay Mesa West) have no official boundaries of their own. They sit inside the Otay Mesa-Nestor planning area, which the map outlines. Each area in the file lists the neighborhoods and receptors inside it.
+- Area sources: City of San Diego Community Planning Districts (`cmty_plan_datasd`) and U.S. Census TIGERweb Incorporated Places (Imperial Beach, GEOID 0636294), retrieved 2026-11-15. Points are thinned to about 9 m (39 KB file).

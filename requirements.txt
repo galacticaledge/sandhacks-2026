@@ -1,5 +1,6 @@
 numpy==2.4.6
 scipy
+contourpy
 fastapi
 uvicorn[standard]
 httpx

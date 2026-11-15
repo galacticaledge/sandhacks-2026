@@ -110,13 +110,12 @@ export default function App() {
 
       <div className="content">
         <div className="disclaimer" role="note">
-          <Icon name="warn" size={16} />
-          <span>
-            <strong>{t.disclaimer}</strong>{" "}
-            <a href={official.sdapcd_h2s} target="_blank" rel="noreferrer">{t.official_link} ↗</a>
-            {" · "}
-            <a href={official.sdapcd_alerts_signup} target="_blank" rel="noreferrer">{t.official_signup} ↗</a>
-          </span>
+          <Icon name="warn" size={15} />
+          <strong className="disc-text"><span className="disc-long">{t.disclaimer}</span><span className="disc-short">{t.disclaimer_short}</span></strong>
+          <nav className="disc-links" aria-label={t.official_link}>
+            <a href={official.sdapcd_h2s} target="_blank" rel="noreferrer" title={t.official_link}><span className="lnk-long">{t.bar_readings}</span><span className="lnk-short">SDAPCD</span> ↗</a>
+            <a href={official.sdapcd_alerts_signup} target="_blank" rel="noreferrer" title={t.official_signup}><span className="lnk-long">{t.bar_alerts}</span><span className="lnk-short">{t.nav_alerts}</span> ↗</a>
+          </nav>
           <div className="seg lang" role="group" aria-label={t.language}>
             <button className={lang === "en" ? "on" : ""} onClick={() => setLang("en")}>EN</button>
             <button className={lang === "es" ? "on" : ""} onClick={() => setLang("es")}>ES</button>

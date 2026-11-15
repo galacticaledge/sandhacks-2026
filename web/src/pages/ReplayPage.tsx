@@ -4,6 +4,9 @@ import { ForecastMap } from "../components/ForecastMap";
 import { InputsCard } from "../components/InputsCard";
 import { PointChart } from "../components/PointChart";
 import { Reports } from "../components/Reports";
+import { Icon } from "../components/Icons";
+import { Select } from "../components/Select";
+import { ZoneLegend } from "../components/ZoneLegend";
 import { fmtClock, fmtPpb, fmtTime } from "../levels";
 import type { Lang, Strings } from "../i18n";
 
@@ -116,32 +119,33 @@ export function ReplayPage({ t, lang }: { t: Strings; lang: Lang }) {
     <div className="page">
       <h1>{t.replay_title}</h1>
       <p className="lede">{t.replay_sub}</p>
-      <div className="row">
-        <label>{t.night_of}{" "}
-          <select value={night} onChange={(e) => setNight(e.target.value)}>
-            {nights.map((n) => <option key={n.night} value={n.night}>{n.night} · {t.peak_word} {fmtPpb(n.peak_ppb)} ppb{n.featured ? ` ★ ${t.replay_featured}` : ""}</option>)}
-          </select>
-        </label>
-        <span className="pill warn-pill">{t.replay_label}</span>
+      <div className="replay-bar">
+        <div className="field">
+          <span className="field-k" id="night-k">{t.night_of}</span>
+          <Select id="night" value={night} onChange={setNight} ariaLabel={t.night_of}
+            groups={[{ options: nights.map((n) => ({ value: n.night, label: `${n.night} · ${t.peak_word} ${fmtPpb(n.peak_ppb)} ppb${n.featured ? ` ★ ${t.replay_featured}` : ""}` })) }]} />
+        </div>
+        <p className="replay-note"><Icon name="warn" size={15} /><span>{t.replay_label}</span></p>
       </div>
       {loading && <p className="muted">{t.computing}</p>}
       {err && <p className="warn">{err}</p>}
       {rep && (
         <>
-          <h2>{t.alert_card_title.replace("{time}", alertTime)}</h2>
-          <div className="row">
-            <label>{t.alert_place_label}{" "}
-              <select value={recId ?? ""} onChange={(e) => setRec(e.target.value)}>
-                {(["neighborhood", "school"] as const).map((k) => (
-                  <optgroup key={k} label={k === "school" ? t.school : t.neighborhood}>
-                    {recs.filter((r) => r.kind === k).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                  </optgroup>
-                ))}
-              </select>
-            </label>
-          </div>
-          <AlertCard night={night} receptorId={recId} t={t} lang={lang} />
-          <p className="muted small">{t.alert_preview_note}</p>
+          <section className="replay-alert">
+            <div className="replay-alert-head">
+              <h2>{t.alert_card_title.replace("{time}", alertTime)}</h2>
+              <div className="field field-inline">
+                <span className="field-k">{t.alert_place_label}</span>
+                <Select id="alert-place" value={recId ?? ""} onChange={setRec} ariaLabel={t.alert_place_label}
+                  groups={(["neighborhood", "school"] as const).map((k) => ({
+                    label: k === "school" ? t.school : t.neighborhood,
+                    options: recs.filter((r) => r.kind === k).map((r) => ({ value: r.id, label: r.name })),
+                  }))} />
+              </div>
+            </div>
+            <AlertCard night={night} receptorId={recId} t={t} lang={lang} />
+            <p className="muted small">{t.alert_preview_note}</p>
+          </section>
           <div className="slider-bar static">
             <div className="slider-col">
               <label htmlFor="rh" className="slider-time">{fmtTime(rep.valid_times[hour], lang, true)}</label>
@@ -149,22 +153,26 @@ export function ReplayPage({ t, lang }: { t: Strings; lang: Lang }) {
             </div>
           </div>
           {rep.has_grid ? (
+            <>
             <div className="split">
-              <ForecastMap height={380} label={`${t.forecast} (${fmtTime(rep.issued_at, lang)})`} overlayUrl={bounds ? `/api/forecast/${rep.run_id}/grid/${hour}.png?pct=p50` : null} bounds={bounds} monitors={fcMon} />
+              <ForecastMap height={380} label={`${t.forecast} (${fmtTime(rep.issued_at, lang)})`} overlayUrl={null} zonesUrl={`/api/forecast/${rep.run_id}/zones/${hour}.geojson?pct=p50`} bounds={bounds} monitors={fcMon} monitorKind="forecast" />
               <ForecastMap height={380} label={t.observed} overlayUrl={null} bounds={null} monitors={obsMon} />
             </div>
+            <ZoneLegend t={t} pct="p50" measured forecastPin className="zl-inline replay-key" />
+            </>
           ) : <p className="muted">{t.replay_no_map}</p>}
-          <div className="grid3">
+          <h2>{t.replay_monitors_h}</h2>
+          <div className="chart-grid">
             {MON.map((m) => {
               const o = rep.observed[m.site_id];
               return (
-                <div className="card" key={m.site_id}>
+                <article className="chart-card" key={m.site_id}>
                   <h3>{m.name}</h3>
                   <Compare times={rep.valid_times} s={rep.forecast[m.site_id]} obs={o} t={t} lang={lang} />
-                  <PointChart times={rep.valid_times} s={rep.forecast[m.site_id]} observed={o} t={t} lang={lang} height={200}
+                  <PointChart times={rep.valid_times} s={rep.forecast[m.site_id]} observed={o} t={t} lang={lang} height={280}
                     issued={rep.issued_at} firstObs={firstAbove(rep.valid_times, o)} />
-                  <p className="muted small"><span className="line-key" /> {t.forecast} · <span className="obs-key" /> {t.observed}</p>
-                </div>
+                  <p className="chart-key"><span className="line-key" /> {t.forecast} <span className="obs-key" /> {t.observed} <span className="thr-key" /> {t.orange_line}</p>
+                </article>
               );
             })}
           </div>
