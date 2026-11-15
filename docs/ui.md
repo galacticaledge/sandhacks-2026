@@ -37,6 +37,9 @@ The forecast level colors are **not** themed. They stay the SDAPCD green/yellow/
   - Detail card shows both the P50 and P90 level badges.
   - Clickable 24-hour strip of the highest median across all places, colored by SDAPCD level. Clicking a bar moves the map to that hour.
   - A median sparkline next to each place in the ranking.
+- **Tonight card extras:** a half-dial gauge on the SDAPCD scale (thresholds 5/30/200 ppb spaced evenly, so it is not linear in ppb): the needle is the highest place's median and the outer tick is its P90. Condition chips for the selected hour: wind arrow (direction the wind blows toward) and speed, temperature, still versus mixing air (stability classes E/F count as still), and river flow.
+- **Map legend** overlay (SDAPCD ranges) at the bottom-left of the map. It is hidden on phones.
+- **Search field:** lighter, smaller placeholder (400 weight, 45% opacity, 16px).
 - **Polish:** soft grape/stone background glow, frosted (blurred) pills and slider over the map, cards fade in and lift on hover, all disabled under `prefers-reduced-motion`.
 - **Live Map** (`#/live`, old `#/map` redirects here): the previous full map with monitor readings and model inputs.
 - **Tonight** full table (`#/tonight`): linked from the Forecast card. **About** (`#/about`): linked from Settings.
