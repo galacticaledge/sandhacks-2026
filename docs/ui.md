@@ -117,3 +117,12 @@ One section below the map with a single heading ("Tonight by place") and the run
 - **Left**: the selected place. It has a shared panel header with its rank ("#4 of 20 tonight"), the P50/P90 badges, stat tiles, a 220px chart, the uncertainty note and the SDAPCD guidance fold.
 - **Right**: the full ranked list with the same panel header and a "Full table" link. It takes the left card's height and scrolls inside it. Rows show the rank number, the name (one line), the kind, the level, a sparkline and the median with P90. The selected row has a lavender edge bar and "showing" under its name.
 - Below 1100px the columns stack and the list is capped at 420px. The duplicate SDAPCD legend was removed from this card; it stays on the map.
+
+## Forecast: predicted concentration zones
+
+- **Map gets ~72% of the stage width** (measured at 1440px). Place details and the ranking moved into a collapsible side panel with two tabs, "Selected place" and "Tonight's ranking". "Hide panel" gives the map the full width, and the panel starts closed on screens under 1100px. Clicking a place on the map or in the ranking opens the "Selected place" tab.
+- **Zones, not dots**: the Forecast map draws the model's predicted concentrations as translucent filled polygons with outlines (green 1–5, yellow 5–30, orange 30–200, purple 200+ ppb), for the selected hour and for the median or high estimate. The pixel heatmap is no longer used on this map; Live Map and Replay still use it.
+- The zones come from `GET /api/forecast/{run_id}/zones/{hour}.geojson?pct=p50|p90` (`api/zones.py`). The endpoint traces filled contours of the stored model grid (24 × 144 × 206, 50 m cells) with `contourpy` at the SDAPCD thresholds. Shapes appear only where the model predicts them: no smoothing, no buffers, no shapes drawn around monitors, and no AI involvement. Tests are in `api/test_zones.py`.
+- **Places** are small labelled points drawn by the map itself, with the level as the ring color, a grape ring when selected, and labels that hide automatically when they would collide. **Monitor readings** stay as the measured pins on top.
+- **Legend** (bottom-left): "Predicted zones (median/high estimate)" with translucent swatches. Short labels are used on phones; the measured-pin key shows only on wide screens.
+- **Limit**: neighborhoods are single points in `data/receptors.geojson` (no boundaries), so the map does not shade whole neighborhoods. A zone over a neighborhood's point is what the ranking reports.

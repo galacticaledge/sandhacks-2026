@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Header, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 import os
@@ -75,6 +75,16 @@ def grid_png(run_id: str, hour: int, pct: str = Query("p50", pattern="^p(50|90)$
     bounds = load_meta(rid)["grid"]["bounds"]
     return FileResponse(path, media_type="image/png",
                         headers={"Cache-Control": "public, max-age=86400", "X-Bounds": str(bounds)})
+
+
+@router.get("/forecast/{run_id}/zones/{hour}.geojson")
+def grid_zones(run_id: str, hour: int, pct: str = Query("p50", pattern="^p(50|90)$")):
+    """Predicted concentration zones (filled contours of the model grid at SDAPCD thresholds)."""
+    from api.zones import zones_for
+    rid = _resolve(run_id)
+    if not 0 <= hour < 24:
+        raise HTTPException(404)
+    return JSONResponse(zones_for(rid, hour, pct), headers={"Cache-Control": "public, max-age=86400"})
 
 
 @router.get("/forecast/{run_id}/point")

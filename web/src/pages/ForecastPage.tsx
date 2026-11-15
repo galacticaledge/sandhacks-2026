@@ -13,6 +13,7 @@ type Tonight = { run_id: string; run_kind: string; issued_at: string; items: Ton
 type Kind = "all" | "neighborhood" | "school" | "monitor";
 type Picked = { id?: string; name: string; lat: number; lon: number; times: string[]; s: Series };
 
+const ZSHORT: Record<Level, string> = { green: "<5", yellow: "5–30", orange: "30+", review: "200+ ppb" };
 const rank = (l: Level | null | undefined) => LEVELS.findIndex((x) => x.key === l);
 
 // Matches the Figma "Smellcast Forecast" frame: address search, map card with filter pills, detail cards below.
@@ -27,6 +28,8 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
   const [q, setQ] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(() => window.innerWidth > 1100);
+  const [tab, setTab] = useState<"place" | "rank">("place");
 
   useEffect(() => {
     if (!now?.latest_run_id) return;
@@ -164,6 +167,7 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
           )}
         </section>
       )}
+      <div className={`stage${panelOpen ? "" : " stage-full"}`}>
       <section className="fc-map card-xl" aria-label={t.nav_forecast}>
         <div className="map-toolbar">
           <form className="fc-search tb-search" onSubmit={search} role="search">
@@ -189,24 +193,30 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
               ))}
             </div>
           </div>
+          <button className="panel-toggle" onClick={() => setPanelOpen(!panelOpen)} aria-expanded={panelOpen} aria-controls="fc-panel">
+            <Icon name="layers" size={15} />{panelOpen ? t.hide_panel : t.show_panel}
+          </button>
         </div>
         {msg && <p className="warn small search-msg" role="status">{msg}</p>}
         <div className="fc-map-body">
         <ForecastMap
-          overlayUrl={meta ? `/api/forecast/${meta.run_id}/grid/${hour}.png?pct=${pct}` : null}
+          overlayUrl={null}
+          zonesUrl={meta ? `/api/forecast/${meta.run_id}/zones/${hour}.geojson?pct=${pct}` : null}
           bounds={meta?.grid?.bounds ?? null}
           monitors={showMonitors ? now?.monitors ?? [] : []}
           sources={(now as unknown as { sources?: MapSource[] })?.sources}
           places={places}
           selectedId={picked?.id}
-          onPlace={selectPlace}
+          onPlace={(id) => { selectPlace(id); setTab("place"); if (!panelOpen) setPanelOpen(true); }}
           marker={picked && !picked.id ? picked : null}
           onPick={(la, lo) => pickAt(la, lo)}
         />
-        <div className="map-legend" aria-hidden="true">
+        <div className="map-legend zone-legend">
+          <span className="zl-title">{pct === "p50" ? t.zones_title_p50 : t.zones_title_p90}:</span>
           {LEVELS.map((l) => (
-            <span key={l.key}><i style={{ background: l.color, color: l.ink }}>{l.icon}</i>{t[`range_${l.key}` as keyof Strings] as string}</span>
+            <span key={l.key}><i className={`zl-sw zl-${l.key}`} aria-hidden="true" /><span className="zl-long">{t[`range_${l.key}` as keyof Strings] as string}</span><span className="zl-short">{ZSHORT[l.key]}</span></span>
           ))}
+          <span className="zl-meas"><span className="mon mon-meas inline" aria-hidden="true"><i style={{ background: LEVELS[0].color }} /><b>0.7</b></span>{t.key_measured}</span>
         </div>
         {meta && (
           <div className="slider-bar">
@@ -222,14 +232,13 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
         )}
         </div>
       </section>
-
-      <section className="fc-places" aria-label={t.places_h}>
-        <header className="fc-places-head">
-          <h2>{t.places_h}</h2>
-          <p className="small muted">{t.run_note}</p>
-        </header>
-        <div className="fc-bottom">
-          <section className="card-xl detail" aria-live="polite">
+      {panelOpen && (
+        <aside className="fc-panel card-xl" id="fc-panel" aria-label={t.places_h}>
+          <div className="seg panel-tabs" role="tablist">
+            <button role="tab" aria-selected={tab === "place"} className={tab === "place" ? "on" : ""} onClick={() => setTab("place")}>{t.tab_place}</button>
+            <button role="tab" aria-selected={tab === "rank"} className={tab === "rank" ? "on" : ""} onClick={() => setTab("rank")}>{t.tab_rank}</button>
+          </div>
+          <section className="detail" aria-live="polite" hidden={tab !== "place"}>
             {picked ? (
               <>
                 <header className="panel-head">
@@ -263,7 +272,7 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
             ) : <p className="muted">{t.pick_place}</p>}
           </section>
 
-          <section className="card-xl rank">
+          <section className="rank" hidden={tab !== "rank"}>
             <header className="panel-head">
               <span className="panel-icon"><Icon name="accuracy" size={15} /></span>
               <h3>{t.tonight_rank}</h3>
@@ -272,7 +281,7 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
             <ul className="rank-list">
               {items.map((r, i) => (
                 <li key={r.id}>
-                  <button className={picked?.id === r.id ? "on" : ""} aria-current={picked?.id === r.id ? "true" : undefined} onClick={() => selectPlace(r.id)}>
+                  <button className={picked?.id === r.id ? "on" : ""} aria-current={picked?.id === r.id ? "true" : undefined} onClick={() => { selectPlace(r.id); setTab("place"); }}>
                     <span className="rank-n">{i + 1}</span>
                     <span className="rank-name">{r.name}<small>{r.kind === "school" ? t.school : r.kind === "monitor" ? t.monitor : t.neighborhood}{picked?.id === r.id ? ` · ${t.showing}` : ""}</small></span>
                     <LevelBadge level={r.level} t={t} small />
@@ -284,8 +293,11 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
               {tonight && items.length === 0 && <li className="muted small">{t.no_match}</li>}
             </ul>
           </section>
-        </div>
-      </section>
+          <p className="small muted panel-note">{t.run_note}</p>
+        </aside>
+      )}
+      </div>
+
       <p className="muted small">{t.never_safe}</p>
     </div>
   );

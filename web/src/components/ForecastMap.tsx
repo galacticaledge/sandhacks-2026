@@ -11,8 +11,10 @@ export type MapPlace = { id: string; name: string; lat: number; lon: number; lev
 // OpenFreeMap Positron: free, no API key (CARTO raster tiles now require a key).
 const STYLE = "https://tiles.openfreemap.org/styles/positron";
 
-export function ForecastMap({ overlayUrl, bounds, monitors, sources, complaints, marker, onPick, places, selectedId, onPlace, height = "100%", label, monitorKind = "measured" }: {
+export function ForecastMap({ overlayUrl, zonesUrl, bounds, monitors, sources, complaints, marker, onPick, places, selectedId, onPlace, height = "100%", label, monitorKind = "measured" }: {
   overlayUrl: string | null;
+  // predicted concentration zones (GeoJSON from /api/forecast/{run}/zones/{h}.geojson); drawn as translucent polygons
+  zonesUrl?: string | null;
   bounds: [number, number][] | null;
   monitors: MapMonitor[];
   sources?: MapSource[];
@@ -49,13 +51,38 @@ export function ForecastMap({ overlayUrl, bounds, monitors, sources, complaints,
         else if (l.type === "line") set("line-opacity", 0.5);
         else if (l.type === "symbol") { set("text-opacity", 0.7); set("icon-opacity", 0.5); }
       }
+      // keep the attribution as the small (i) button; it still opens on click
+      el.current?.querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
       ready.current = true;
+      const empty = { type: "FeatureCollection" as const, features: [] };
+      m.addSource("zones", { type: "geojson", data: empty });
+      const byLevel = (g: string, y: string, o: string, r: string) =>
+        ["match", ["get", "level"], "green", g, "yellow", y, "orange", o, "review", r, g] as unknown as maplibregl.ExpressionSpecification;
+      m.addLayer({ id: "zones-fill", type: "fill", source: "zones",
+        paint: { "fill-color": byLevel("#1a9850", "#fee08b", "#f46d43", "#762a83"), "fill-opacity": ["match", ["get", "level"], "green", 0.16, "yellow", 0.34, "orange", 0.42, "review", 0.5, 0.2] } });
+      m.addLayer({ id: "zones-line", type: "line", source: "zones",
+        paint: { "line-color": byLevel("#15803d", "#ca8a04", "#c2410c", "#5b2167"), "line-width": ["match", ["get", "level"], "green", 0.8, 1.4], "line-opacity": 0.85 } });
       m.addSource("complaints", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       m.addLayer({ id: "complaints", type: "circle", source: "complaints",
         paint: { "circle-radius": 3, "circle-color": "#5d4a72", "circle-opacity": 0.55, "circle-stroke-color": "#fff", "circle-stroke-width": 0.8 } });
+      m.addSource("places", { type: "geojson", data: empty });
+      m.addLayer({ id: "places-dot", type: "circle", source: "places",
+        paint: { "circle-radius": ["case", ["get", "sel"], 7.5, 5.5], "circle-color": "#ffffff",
+          "circle-stroke-color": ["case", ["get", "sel"], "#5d4a72", ["get", "color"]], "circle-stroke-width": ["case", ["get", "sel"], 4, 2.5] } });
+      m.addLayer({ id: "places-label", type: "symbol", source: "places",
+        layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": ["case", ["get", "sel"], 13, 11],
+          "text-offset": [0, 0.9], "text-anchor": "top", "text-optional": true, "text-max-width": 9 },
+        paint: { "text-color": ["case", ["get", "sel"], "#3b2d4d", "#3a3532"], "text-halo-color": "rgba(255,255,255,0.9)", "text-halo-width": 1.4 } });
+      m.on("mouseenter", "places-dot", () => { m.getCanvas().style.cursor = "pointer"; });
+      m.on("mouseleave", "places-dot", () => { m.getCanvas().style.cursor = ""; });
       m.fire("smellcast:ready");
     });
-    m.on("click", (e) => onPickRef.current?.(e.lngLat.lat, e.lngLat.lng));
+    m.on("click", (e) => {
+      const hit = ready.current && m.getLayer("places-dot")
+        ? m.queryRenderedFeatures([[e.point.x - 6, e.point.y - 6], [e.point.x + 6, e.point.y + 6]], { layers: ["places-dot"] })[0] : undefined;
+      if (hit && onPlaceRef.current) onPlaceRef.current(String(hit.properties?.id));
+      else onPickRef.current?.(e.lngLat.lat, e.lngLat.lng);
+    });
     map.current = m;
     return () => { m.remove(); map.current = null; ready.current = false; };
   }, []);
@@ -132,25 +159,31 @@ export function ForecastMap({ overlayUrl, bounds, monitors, sources, complaints,
     return () => made.forEach((x) => x.remove());
   }, [sources]);
 
-  // neighborhoods / schools (clickable, colored by tonight's forecast level)
+  // neighborhoods / schools: small labelled points on the map itself, so the zones stay the main thing
   useEffect(() => {
     const m = map.current;
-    if (!m || !places) return;
-    const made = places.map((p) => {
-      const lvl = levelStyle(p.level);
-      const d = document.createElement("button");
-      d.type = "button";
-      d.className = `place${p.id === selectedId ? " sel" : ""}`;
-      d.style.background = lvl?.color ?? "#ccc";
-      d.style.color = lvl?.ink ?? "#333";
-      d.title = `${p.name}: ${fmtPpb(p.ppb)} ppb`;
-      d.setAttribute("aria-label", d.title);
-      d.textContent = lvl?.icon ?? "○";
-      d.addEventListener("click", (e) => { e.stopPropagation(); onPlaceRef.current?.(p.id); });
-      return new maplibregl.Marker({ element: d }).setLngLat([p.lon, p.lat]).addTo(m);
+    if (!m) return;
+    const apply = () => (m.getSource("places") as GeoJSONSource | undefined)?.setData({
+      type: "FeatureCollection",
+      features: (places ?? []).map((p) => ({ type: "Feature", properties: { id: p.id, name: p.name, sel: p.id === selectedId, color: levelStyle(p.level)?.color ?? "#8f857d" },
+        geometry: { type: "Point", coordinates: [p.lon, p.lat] } })),
     });
-    return () => made.forEach((x) => x.remove());
+    if (ready.current) apply(); else m.once("smellcast:ready", apply);
   }, [places, selectedId]);
+
+  // predicted concentration zones
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    let live = true;
+    const apply = () => {
+      const src = m.getSource("zones") as GeoJSONSource | undefined;
+      if (!zonesUrl) { src?.setData({ type: "FeatureCollection", features: [] }); return; }
+      fetch(zonesUrl).then((r) => (r.ok ? r.json() : null)).then((fc) => { if (live && fc) (m.getSource("zones") as GeoJSONSource | undefined)?.setData(fc); }).catch(() => {});
+    };
+    if (ready.current) apply(); else m.once("smellcast:ready", apply);
+    return () => { live = false; };
+  }, [zonesUrl]);
 
   // picked point
   useEffect(() => {
