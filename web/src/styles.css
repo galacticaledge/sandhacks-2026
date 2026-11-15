@@ -418,3 +418,22 @@ details.panel.fold[open] > summary { margin-bottom: 12px; }
 .panel .legend { border: 0; padding: 0; background: transparent; margin-top: 12px; }
 .panel .key { margin: 0; }
 @media (max-width: 760px) { .side-search .fc-input { flex: none; height: 46px; } }
+
+/* ---- one search bar: field + inset button share a single pill ---- */
+.fc-search { flex-wrap: nowrap; gap: 6px; max-width: 640px; height: 52px; padding: 5px 5px 5px 0; border-radius: 18px;
+  background: rgba(167, 135, 203, .16); border: 1px solid rgba(167, 135, 203, .45); transition: background .15s, border-color .15s; }
+.fc-search:hover { background: rgba(167, 135, 203, .22); }
+.fc-search:focus-within { background: rgba(167, 135, 203, .24); border-color: var(--lavender); outline: 2px solid rgba(167, 135, 203, .3); outline-offset: 2px; }
+.fc-search .fc-input, .fc-search .fc-input:hover, .fc-search .fc-input:focus-within { flex: 1; height: 100%; background: transparent; border: 0; outline: 0; padding: 0 8px 0 16px; }
+.fc-search .btn-grape, .side-search .btn-grape { height: 100%; flex: none; padding: 0 18px; border-radius: 13px; font-size: .88rem; font-weight: 600; border: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
+.side-search { max-width: none; height: 46px; padding: 4px 4px 4px 0; border-radius: 15px; }
+.side-search .fc-input, .side-search .fc-input:hover, .side-search .fc-input:focus-within { height: 100%; padding: 0 6px 0 12px; }
+.side-search .btn-grape { padding: 0 14px; border-radius: 11px; font-size: .84rem; }
+.search-msg { margin: -8px 0 0 4px; }
+@media (max-width: 760px) {
+  .fc-search, .side-search { flex-direction: row; align-items: stretch; gap: 6px; max-width: none; }
+  .fc-search .fc-input, .side-search .fc-input { flex: 1; height: 100%; }
+  .fc-search .btn-grape { flex: none; height: 100%; }
+}
+.fc-input input { text-overflow: ellipsis; }

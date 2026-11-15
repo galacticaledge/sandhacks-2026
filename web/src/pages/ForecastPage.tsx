@@ -161,8 +161,8 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.search_placeholder} aria-label={t.search_placeholder} />
         </label>
         <button className="btn-grape" disabled={busy}>{t.search}</button>
-        {msg && <span className="warn small" role="status">{msg}</span>}
       </form>
+      {msg && <p className="warn small search-msg" role="status">{msg}</p>}
 
       <section className="fc-map card-xl" aria-label={t.nav_forecast}>
         <ForecastMap
