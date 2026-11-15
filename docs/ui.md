@@ -24,7 +24,7 @@ The forecast level colors are **not** themed. They stay the SDAPCD green/yellow/
   - A "Monitors now" card: the three SDAPCD monitors with level swatch and ppb, last-update time, and a pulsing live dot that turns red if readings are more than 90 minutes old. It links to Live Map.
   - Lavender skyline and "San Diego, CA" at the bottom.
   - Responsive: below 1100px wide it collapses to icons; below 760px it becomes a sticky top icon bar; on screens under 820px tall the skyline is hidden.
-- **Disclaimer bar** on every page: experimental forecast, not an official advisory, with links to SDAPCD readings and alert sign-up, plus an EN/ES switch.
+- **Disclaimer bar** on every page (44px tall at all widths, from 320px phones up; the warning text is never truncated: below 1100px it uses a short form, below 520px the links shorten to "SDAPCD" and "Alerts", below 370px the EN/ES switch moves to Settings only): experimental forecast, not an official advisory, with links to SDAPCD readings and alert sign-up, plus an EN/ES switch.
 - **Forecast** (`#/forecast`, default, matches the frame):
   - Lavender address search.
   - Map card with pill filters. "Risk level" is a dropdown: all / yellow+ / orange+. The kind pills are All areas / Neighborhoods / Schools / Monitors.
@@ -62,3 +62,11 @@ The forecast level colors are **not** themed. They stay the SDAPCD green/yellow/
 - The frame's **"Cities"** pill became **Schools** and **Monitors**. Receptors in `data/receptors.geojson` are neighborhood / school / monitor, with no city field.
 - The frame has no Tonight or About nav item. Tonight is a P0 page, so it's reachable from the Forecast page's "Full table" link, and the top of its table is shown on Forecast.
 - The ranked list uses tonight's evening (5 PM) run. The map and chart use the latest run. The page says so ("run note").
+
+## Replay page layout
+
+- One controls bar: night picker and the "replayed with observed weather" note on the same row.
+- Alert section: heading, then "Show the alert for" directly underneath, then the email preview.
+- Monitor charts: 2-column grid at desktop widths (third monitor wraps to the next row), 1 column below 900px. Each card has aligned rows (title, one-line comparison, 280px chart, key).
+- All charts share round y-axis ticks (0, 10, 20, 30, ...) and a fixed axis width, so axes line up card to card. Small negative monitor readings (instrument noise) are plotted at 0, matching how they are displayed elsewhere.
+- The 30 ppb line is a 2px dashed orange line with a bold label, and it appears in each card's key.
