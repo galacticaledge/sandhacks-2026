@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { get, type Level, type Meta, type Now, type Series, type TonightItem } from "../api";
 import { ForecastMap, type MapPlace, type MapSource } from "../components/ForecastMap";
+import { Gauge } from "../components/Gauge";
 import { Icon } from "../components/Icons";
 import { Legend } from "../components/Legend";
 import { LevelBadge } from "../components/LevelBadge";
@@ -80,6 +81,7 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
     .map((r) => ({ id: r.id, name: r.name, lat: r.lat, lon: r.lon, level: r.level ?? null, ppb: r.peak_p50 ?? null })), [items]);
   const showMonitors = kind === "all" || kind === "monitor";
   const vt = meta?.valid_times[hour];
+  const met = meta?.inputs.met;
   const pItem = picked?.id ? tonight?.items.find((x) => x.id === picked.id) : undefined;
   const peak50 = picked ? Math.max(...picked.s.p50) : null;
   const peak90 = picked ? Math.max(...picked.s.p90) : null;
@@ -111,12 +113,27 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
                 ? t.strip_orange.replace("{n}", String(nLikely + nPossible)).replace("{m}", String(placesTonight.length)).replace("{a}", String(nLikely)).replace("{b}", String(nPossible))
                 : t.strip_none}
             </p>
+            {met && vt && (
+              <div className="conds" aria-label={`${t.cond_at} ${fmtTime(vt, lang, true)}`}>
+                <span className="cond" title={t.wind}>
+                  <span className="wind-arrow" style={{ transform: `rotate(${(met.wind_dir_deg[hour] ?? 0) + 180}deg)` }} aria-hidden="true"><Icon name="arrow" size={16} /></span>
+                  {(met.wind_ms[hour] ?? 0).toFixed(1)} m/s
+                </span>
+                <span className="cond" title={t.temp}><Icon name="temp" size={16} />{(met.temp_c[hour] ?? 0).toFixed(0)} °C</span>
+                <span className={`cond${"EF".includes(met.stability[hour]) ? " cond-still" : ""}`} title={`${t.stability} ${met.stability[hour]}`}>
+                  <Icon name="layers" size={16} />{"EF".includes(met.stability[hour]) ? t.air_still : t.air_mixing}
+                </span>
+                <span className="cond" title={t.river_flow}><Icon name="wave" size={16} />{meta?.inputs.flow_mgd[hour]} MGD</span>
+                <small className="muted">{t.cond_at} {fmtTime(vt, lang, true)}</small>
+              </div>
+            )}
             <p className="muted">
               {t.hero_highest} <strong className="ink">{worst.name}</strong>: {fmtPpb(worst.peak_p50)} ppb
               {worst.peak_time ? <> · {fmtTime(worst.peak_time, lang, true)}</> : null}
               {" "}· {t.peak_high}: {fmtPpb(worst.peak_p90)} ppb
             </p>
           </div>
+          <Gauge p50={worst.peak_p50 ?? 0} p90={worst.peak_p90 ?? 0} label={worst.name} />
           {meta && (
             <div className="hstrip" role="group" aria-label={t.hour}>
               <div className="hstrip-bars">
@@ -173,6 +190,11 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
             <button key={k} className={`pill-btn${kind === k ? " on" : ""}`} aria-pressed={kind === k} onClick={() => setKind(k)}>{label}</button>
           ))}
         </div>
+        <div className="map-legend" aria-hidden="true">
+          {LEVELS.map((l) => (
+            <span key={l.key}><i style={{ background: l.color, color: l.ink }}>{l.icon}</i>{t[`range_${l.key}` as keyof Strings] as string}</span>
+          ))}
+        </div>
         {meta && (
           <div className="slider-bar">
             <div className="slider-col">
@@ -202,10 +224,10 @@ export function ForecastPage({ t, lang, now }: { t: Strings; lang: Lang; now: No
                 </div>
               </div>
               <div className="stats">
-                <div><span>{t.peak}</span><strong>{fmtPpb(pItem?.peak_p50 ?? peak50)} <small>ppb</small></strong></div>
-                <div><span>{t.peak_high}</span><strong>{fmtPpb(pItem?.peak_p90 ?? peak90)} <small>ppb</small></strong></div>
-                {pItem?.peak_time && <div><span>{t.peak_hour}</span><strong>{fmtTime(pItem.peak_time, lang, true)}</strong></div>}
-                {pItem?.confidence && <div><span>{t.confidence}</span><strong>{t[`conf_${pItem.confidence}` as keyof Strings] as string}</strong></div>}
+                <div><span><Icon name="peak" size={14} />{t.peak}</span><strong>{fmtPpb(pItem?.peak_p50 ?? peak50)} <small>ppb</small></strong></div>
+                <div><span><Icon name="high" size={14} />{t.peak_high}</span><strong>{fmtPpb(pItem?.peak_p90 ?? peak90)} <small>ppb</small></strong></div>
+                {pItem?.peak_time && <div><span><Icon name="clock" size={14} />{t.peak_hour}</span><strong>{fmtTime(pItem.peak_time, lang, true)}</strong></div>}
+                {pItem?.confidence && <div><span><Icon name="shield" size={14} />{t.confidence}</span><strong>{t[`conf_${pItem.confidence}` as keyof Strings] as string}</strong></div>}
               </div>
               <PointChart times={picked.times} s={picked.s} t={t} lang={lang} height={190} />
               <p className="muted small">{t.uncertainty}</p>

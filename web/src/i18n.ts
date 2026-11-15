@@ -2,6 +2,7 @@
 const en = {
   tagline: "A weather forecast for sewer gas",
   hero_expect: "Expected peak level:", hero_highest: "Highest forecast:", strip_note: "Highest median across all places, by hour. Click a bar to show that hour on the map.",
+  cond_at: "Conditions at", air_still: "Still air", air_mixing: "Mixing air",
   menu: "Menu", monitors_now: "Monitors now (ppb)", stale: "Readings are more than 90 minutes old",
   nav_forecast: "Forecast", nav_live: "Live Map", nav_settings: "Settings", city: "San Diego, CA",
   risk_level: "Risk level", lvl_all: "All levels", lvl_yellow: "Yellow or higher", lvl_orange: "Orange or higher",
@@ -138,6 +139,7 @@ export type Strings = typeof en;
 const es: Strings = {
   tagline: "Un pronóstico del tiempo para el gas de drenaje",
   hero_expect: "Nivel pico esperado:", hero_highest: "Pronóstico más alto:", strip_note: "Mediana más alta entre todos los lugares, por hora. Haga clic en una barra para verla en el mapa.",
+  cond_at: "Condiciones a las", air_still: "Aire quieto", air_mixing: "Aire en mezcla",
   menu: "Menú", monitors_now: "Monitores ahora (ppb)", stale: "Las lecturas tienen más de 90 minutos",
   nav_forecast: "Pronóstico", nav_live: "Mapa en vivo", nav_settings: "Ajustes", city: "San Diego, CA",
   risk_level: "Nivel de riesgo", lvl_all: "Todos los niveles", lvl_yellow: "Amarillo o más", lvl_orange: "Naranja o más",
