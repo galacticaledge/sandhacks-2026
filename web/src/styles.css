@@ -822,3 +822,5 @@ h3, .card h3, .chart-card h3, .detail-head h2, .rank .detail-head h2, .legend-ti
 }
 .zl-short { display: none; }
 @media (max-width: 760px) { .zone-legend .zl-long { display: none; } .zone-legend .zl-short { display: inline; } }
+.zone-legend .zl-short { display: none; }
+@media (max-width: 760px) { .zone-legend .zl-long { display: none; } .zone-legend .zl-short { display: inline; } }

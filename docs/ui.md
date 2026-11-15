@@ -126,3 +126,11 @@ One section below the map with a single heading ("Tonight by place") and the run
 - **Places** are small labelled points drawn by the map itself, with the level as the ring color, a grape ring when selected, and labels that hide automatically when they would collide. **Monitor readings** stay as the measured pins on top.
 - **Legend** (bottom-left): "Predicted zones (median/high estimate)" with translucent swatches. Short labels are used on phones; the measured-pin key shows only on wide screens.
 - **Limit**: neighborhoods are single points in `data/receptors.geojson` (no boundaries), so the map does not shade whole neighborhoods. A zone over a neighborhood's point is what the ranking reports.
+
+## Map focus: San Diego County
+
+All maps (Forecast, Live Map, Replay) share `ForecastMap`:
+- The view is limited to the county's extent (`maxBounds` [-117.75, 32.42] to [-115.95, 33.60], `minZoom` 9). Maps still open on the South Bay at zoom 12.3.
+- Everything outside San Diego County (Tijuana, neighboring counties, open ocean) is washed out with Stone Brown at 55%. The county line is a thin dashed Stone Brown line.
+- The boundary is the official Census polygon (`web/public/sd-county.geojson`, 1,284 points, about 28 KB), not a hand-drawn border. It follows the international border at about 32.534° N in the South Bay.
+- The wash sits above the forecast zones, so the small part of the model grid south of the border is faded too.

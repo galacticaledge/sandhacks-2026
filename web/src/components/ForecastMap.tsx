@@ -41,7 +41,11 @@ export function ForecastMap({ overlayUrl, zonesUrl, bounds, monitors, sources, c
 
   useEffect(() => {
     if (!el.current) return;
-    const m = new maplibregl.Map({ container: el.current, style: STYLE, center: [-117.085, 32.567], zoom: 12.3, attributionControl: { compact: true } });
+    const m = new maplibregl.Map({
+      container: el.current, style: STYLE, center: [-117.085, 32.567], zoom: 12.3, attributionControl: { compact: true },
+      // keep the view on San Diego County (the county's extent plus a little margin), never the whole world
+      maxBounds: [[-117.75, 32.42], [-115.95, 33.6]], minZoom: 9,
+    });
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     m.on("load", () => {
       // basemap is context, not data: fade it so the forecast overlay and readings stand out
@@ -62,6 +66,19 @@ export function ForecastMap({ overlayUrl, zonesUrl, bounds, monitors, sources, c
         paint: { "fill-color": byLevel("#1a9850", "#fee08b", "#f46d43", "#762a83"), "fill-opacity": ["match", ["get", "level"], "green", 0.16, "yellow", 0.34, "orange", 0.42, "review", 0.5, 0.2] } });
       m.addLayer({ id: "zones-line", type: "line", source: "zones",
         paint: { "line-color": byLevel("#15803d", "#ca8a04", "#c2410c", "#5b2167"), "line-width": ["match", ["get", "level"], "green", 0.8, 1.4], "line-opacity": 0.85 } });
+      // everything outside San Diego County is washed out; the county line is drawn thin and quiet
+      m.addSource("county-mask", { type: "geojson", data: empty });
+      m.addLayer({ id: "county-mask", type: "fill", source: "county-mask", paint: { "fill-color": "#3a3533", "fill-opacity": 0.55 } });
+      m.addLayer({ id: "county-line", type: "line", source: "county-mask",
+        paint: { "line-color": "#5c5552", "line-width": 1.6, "line-dasharray": [3, 2], "line-opacity": 0.9 } });
+      fetch("/sd-county.geojson").then((r) => r.json()).then((fc) => {
+        const g = fc.features?.[0]?.geometry;
+        const holes: number[][][] = g?.type === "Polygon" ? g.coordinates : g?.type === "MultiPolygon" ? g.coordinates.map((p: number[][][]) => p[0]) : [];
+        const world = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]];
+        (m.getSource("county-mask") as GeoJSONSource | undefined)?.setData({
+          type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [world, ...holes] },
+        });
+      }).catch(() => { /* map still works without the mask */ });
       m.addSource("complaints", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       m.addLayer({ id: "complaints", type: "circle", source: "complaints",
         paint: { "circle-radius": 3, "circle-color": "#5d4a72", "circle-opacity": 0.55, "circle-stroke-color": "#fff", "circle-stroke-width": 0.8 } });
