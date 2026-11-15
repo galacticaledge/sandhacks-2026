@@ -1,15 +1,17 @@
 import maplibregl, { type ImageSource, type Map as MLMap, type GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef } from "react";
+import type { Level } from "../api";
 import { fmtPpb, levelStyle, levelOf } from "../levels";
 
 export type MapMonitor = { site_id: string; name: string; lat: number; lon: number; ppb: number | null };
 export type MapSource = { id: string; name: string; lat: number; lon: number; main: boolean };
+export type MapPlace = { id: string; name: string; lat: number; lon: number; level: Level | null; ppb: number | null };
 
 // OpenFreeMap Positron: free, no API key (CARTO raster tiles now require a key).
 const STYLE = "https://tiles.openfreemap.org/styles/positron";
 
-export function ForecastMap({ overlayUrl, bounds, monitors, sources, complaints, marker, onPick, height = "100%", label }: {
+export function ForecastMap({ overlayUrl, bounds, monitors, sources, complaints, marker, onPick, places, selectedId, onPlace, height = "100%", label }: {
   overlayUrl: string | null;
   bounds: [number, number][] | null;
   monitors: MapMonitor[];
@@ -17,6 +19,9 @@ export function ForecastMap({ overlayUrl, bounds, monitors, sources, complaints,
   complaints?: { lat: number; lon: number }[];
   marker?: { lat: number; lon: number } | null;
   onPick?: (lat: number, lon: number) => void;
+  places?: MapPlace[];
+  selectedId?: string | null;
+  onPlace?: (id: string) => void;
   height?: string | number;
   label?: string;
 }) {
@@ -27,6 +32,8 @@ export function ForecastMap({ overlayUrl, bounds, monitors, sources, complaints,
   const pick = useRef<maplibregl.Marker | null>(null);
   const onPickRef = useRef(onPick);
   onPickRef.current = onPick;
+  const onPlaceRef = useRef(onPlace);
+  onPlaceRef.current = onPlace;
 
   useEffect(() => {
     if (!el.current) return;
@@ -36,7 +43,7 @@ export function ForecastMap({ overlayUrl, bounds, monitors, sources, complaints,
       ready.current = true;
       m.addSource("complaints", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       m.addLayer({ id: "complaints", type: "circle", source: "complaints",
-        paint: { "circle-radius": 3, "circle-color": "#1f3b4d", "circle-opacity": 0.55, "circle-stroke-color": "#fff", "circle-stroke-width": 0.8 } });
+        paint: { "circle-radius": 3, "circle-color": "#5d4a72", "circle-opacity": 0.55, "circle-stroke-color": "#fff", "circle-stroke-width": 0.8 } });
       m.fire("smellcast:ready");
     });
     m.on("click", (e) => onPickRef.current?.(e.lngLat.lat, e.lngLat.lng));
@@ -113,12 +120,33 @@ export function ForecastMap({ overlayUrl, bounds, monitors, sources, complaints,
     return () => made.forEach((x) => x.remove());
   }, [sources]);
 
+  // neighborhoods / schools (clickable, colored by tonight's forecast level)
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !places) return;
+    const made = places.map((p) => {
+      const lvl = levelStyle(p.level);
+      const d = document.createElement("button");
+      d.type = "button";
+      d.className = `place${p.id === selectedId ? " sel" : ""}`;
+      d.style.background = lvl?.color ?? "#ccc";
+      d.style.color = lvl?.ink ?? "#333";
+      d.title = `${p.name}: ${fmtPpb(p.ppb)} ppb`;
+      d.setAttribute("aria-label", d.title);
+      d.textContent = lvl?.icon ?? "○";
+      d.addEventListener("click", (e) => { e.stopPropagation(); onPlaceRef.current?.(p.id); });
+      return new maplibregl.Marker({ element: d }).setLngLat([p.lon, p.lat]).addTo(m);
+    });
+    return () => made.forEach((x) => x.remove());
+  }, [places, selectedId]);
+
   // picked point
   useEffect(() => {
     const m = map.current;
     if (!m) return;
     pick.current?.remove();
-    pick.current = marker ? new maplibregl.Marker({ color: "#1f3b4d" }).setLngLat([marker.lon, marker.lat]).addTo(m) : null;
+    pick.current = marker ? new maplibregl.Marker({ color: "#5d4a72" }).setLngLat([marker.lon, marker.lat]).addTo(m) : null;
+    if (marker && !m.getBounds().contains([marker.lon, marker.lat])) m.easeTo({ center: [marker.lon, marker.lat], duration: 600 });
   }, [marker]);
 
   return (

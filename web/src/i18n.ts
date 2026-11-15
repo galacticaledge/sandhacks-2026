@@ -1,6 +1,15 @@
 // Spanish strings: HUMAN review by a fluent speaker pending (spec 7).
 const en = {
   tagline: "A weather forecast for sewer gas",
+  hero_expect: "Expected peak level:", hero_highest: "Highest forecast:", strip_note: "Highest median across all places, by hour. Click a bar to show that hour on the map.",
+  menu: "Menu", monitors_now: "Monitors now (ppb)", stale: "Readings are more than 90 minutes old",
+  nav_forecast: "Forecast", nav_live: "Live Map", nav_settings: "Settings", city: "San Diego, CA",
+  risk_level: "Risk level", lvl_all: "All levels", lvl_yellow: "Yellow or higher", lvl_orange: "Orange or higher",
+  all_areas: "All areas", neighborhoods: "Neighborhoods", schools: "Schools", monitors_f: "Monitors",
+  tonight_rank: "Tonight's highest forecasts", full_table: "Full table", no_match: "No places match these filters.",
+  pick_place: "Pick a place on the map or in the list.", uncertainty: "Shaded band = likely range (P10–P90). Median line = best guess.",
+  settings_title: "Settings", theme: "Theme", theme_dark: "Dark", theme_light: "Light", theme_system: "System",
+  about_link: "How Smellcast works, data sources and limitations", run_note: "List: tonight's 5 PM run. Map and chart: latest run.",
   nav_map: "Forecast map", nav_tonight: "Tonight", nav_replay: "Replay", nav_accuracy: "Accuracy", nav_alerts: "Alerts", nav_about: "About",
   disclaimer: "Experimental forecast, not an official advisory.",
   official_link: "Official readings and advisories: SDAPCD",
@@ -128,6 +137,15 @@ export type Strings = typeof en;
 
 const es: Strings = {
   tagline: "Un pronóstico del tiempo para el gas de drenaje",
+  hero_expect: "Nivel pico esperado:", hero_highest: "Pronóstico más alto:", strip_note: "Mediana más alta entre todos los lugares, por hora. Haga clic en una barra para verla en el mapa.",
+  menu: "Menú", monitors_now: "Monitores ahora (ppb)", stale: "Las lecturas tienen más de 90 minutos",
+  nav_forecast: "Pronóstico", nav_live: "Mapa en vivo", nav_settings: "Ajustes", city: "San Diego, CA",
+  risk_level: "Nivel de riesgo", lvl_all: "Todos los niveles", lvl_yellow: "Amarillo o más", lvl_orange: "Naranja o más",
+  all_areas: "Todas las zonas", neighborhoods: "Vecindarios", schools: "Escuelas", monitors_f: "Monitores",
+  tonight_rank: "Pronósticos más altos de esta noche", full_table: "Tabla completa", no_match: "Ningún lugar coincide con estos filtros.",
+  pick_place: "Elija un lugar en el mapa o en la lista.", uncertainty: "Banda sombreada = rango probable (P10–P90). Línea = mejor estimación.",
+  settings_title: "Ajustes", theme: "Tema", theme_dark: "Oscuro", theme_light: "Claro", theme_system: "Sistema",
+  about_link: "Cómo funciona Smellcast, fuentes de datos y limitaciones", run_note: "Lista: corrida de las 5 PM. Mapa y gráfica: última corrida.",
   nav_map: "Mapa del pronóstico", nav_tonight: "Esta noche", nav_replay: "Repetición", nav_accuracy: "Precisión", nav_alerts: "Alertas", nav_about: "Acerca de",
   disclaimer: "Pronóstico experimental, no es un aviso oficial.",
   official_link: "Lecturas y avisos oficiales: SDAPCD",

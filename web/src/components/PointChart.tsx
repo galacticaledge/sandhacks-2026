@@ -29,7 +29,7 @@ export function PointChart({ times, s, observed, t, lang, height = 220, issued, 
           contentStyle={{ background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
         />
         <Area dataKey="band" stroke="none" fill="var(--band)" isAnimationActive={false} />
-        <Line dataKey="p50" stroke="var(--ink)" strokeWidth={2} dot={false} isAnimationActive={false} />
+        <Line dataKey="p50" stroke="var(--accent)" strokeWidth={2.5} dot={false} isAnimationActive={false} />
         {observed && <Scatter dataKey="obs" fill="var(--obs)" shape="circle" isAnimationActive={false} />}
         {xi && <ReferenceLine x={xi} stroke="var(--ink)" strokeWidth={1.5} label={{ value: `${t.issued_marker} ${fmtTime(xi, lang)}`, position: "insideTopLeft", fontSize: 11, fill: "var(--ink)" }} />}
         {xo && <ReferenceLine x={xo} stroke="var(--obs)" strokeDasharray="2 3" strokeWidth={1.5} label={{ value: t.first_obs_marker, position: "insideTopRight", fontSize: 11, fill: "var(--obs)" }} />}
