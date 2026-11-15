@@ -492,3 +492,53 @@ details.panel.fold[open] > summary { margin-bottom: 12px; }
 @media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } .field select { min-width: 0; width: 100%; } .field { flex: 1 1 100%; } }
 @media (max-width: 370px) { .disclaimer .seg.lang { display: none; } }
 @media (max-width: 900px) { .field-inline { flex-direction: column; align-items: stretch; gap: 6px; } }
+
+/* ---- custom dropdown: always opens below the field ---- */
+.dd { position: relative; min-width: 260px; }
+.dd-btn { width: 100%; height: 42px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 12px 0 14px;
+  border: 1px solid var(--border); border-radius: 12px; background: var(--panel-2); color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; text-align: left; }
+.dd-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dd-btn svg { flex: none; color: var(--muted); transition: transform .15s; }
+.dd-btn:hover { border-color: rgba(167, 135, 203, .5); }
+.dd.open .dd-btn { border-color: var(--lavender); }
+.dd.open .dd-btn svg { transform: rotate(180deg); }
+.dd-list { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 50; max-height: 320px; overflow-y: auto; margin: 0; padding: 6px;
+  list-style: none; background: var(--panel); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 14px 36px rgba(0, 0, 0, .45); }
+.dd-list ul { list-style: none; margin: 0; padding: 0; }
+.dd-group { padding: 10px 10px 4px; font-size: 12px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.dd-opt { padding: 8px 10px; border-radius: 9px; font-size: 14px; cursor: pointer; }
+.dd-opt.active { background: rgba(167, 135, 203, .18); }
+.dd-opt.selected { color: var(--lavender); font-weight: 600; }
+[data-theme="light"] .dd-opt.selected { color: var(--grape); }
+@media (max-width: 900px) { .dd { min-width: 0; width: 100%; } }
+
+/* each section fades in with a transform, which makes it its own layer; lift the ones holding dropdowns */
+.replay-bar { position: relative; z-index: 6; }
+.replay-alert { position: relative; z-index: 5; }
+/* ======================================================================
+   Type scale (single source of truth; overrides earlier sizes)
+   page title 28 / uppercase / 600 · section heading 17 / 600
+   card title 15 / 600 · body 14 / 400 · supporting 12 / 400
+   ====================================================================== */
+body { font-size: 14px; font-weight: 400; line-height: 1.55; }
+p, li, td, dd, dt, label, blockquote, .lede, .prose, .hint, .badges, .compare + *, .email-body, .rank-name, .mon-name { font-size: 14px; }
+.now-name, .now-row, .side-hint { font-size: 12px; }
+
+.page > h1, .hero h1 { font-size: 28px; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; line-height: 1.2; }
+.hero h1 { margin: 6px 0 8px; }
+.hero-level { font-weight: 600; }
+
+h2, .page h2, .replay-alert-head h2 { font-size: 17px; font-weight: 600; line-height: 1.35; }
+.prose h2 { font-size: 17px; }
+
+h3, .card h3, .chart-card h3, .detail-head h2, .rank .detail-head h2, .legend-title, .strip-q, .panel-h, .metric h3 { font-size: 15px; font-weight: 600; line-height: 1.35; }
+.panel-h { text-transform: none; letter-spacing: 0; color: var(--ink); }
+.panel-h span { font-size: 12px; font-weight: 400; color: var(--muted); }
+
+.small, small, .muted.small, .tile-sub, .tile-k, .chart-key, .compare, .chart-card .compare, .stats span, .hstrip small, .hstrip-axis,
+.rank-name small, .rank-val small, .mon-name small, .mon-ppb small, .gauge figcaption span, .conds small, .now-card small, .now-head,
+.field-k, .eyebrow, .nav-label, .dd-group, th, .foot, .chip, .badge, .badge-sm, .legend, .legend-row, .key, .search-msg, .replay-note,
+.brand small, .detail p.muted, .fold > summary, .fold dl, .cond, .map-legend, .strip-links a:not(.btn), .warn-pill, .disclaimer { font-size: 12px; }
+.small, small, .tile-sub, .tile-k, .chart-key, .compare, .stats span, .hstrip small, .rank-name small, .rank-val small, .mon-name small,
+.gauge figcaption span, .conds small, .now-card small, .field-k, .eyebrow, .nav-label, .dd-group, th, .foot, .legend-row, .key, .replay-note { font-weight: 400; }
+.lede { color: var(--muted); }

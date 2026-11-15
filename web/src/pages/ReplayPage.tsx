@@ -5,6 +5,7 @@ import { InputsCard } from "../components/InputsCard";
 import { PointChart } from "../components/PointChart";
 import { Reports } from "../components/Reports";
 import { Icon } from "../components/Icons";
+import { Select } from "../components/Select";
 import { fmtClock, fmtPpb, fmtTime } from "../levels";
 import type { Lang, Strings } from "../i18n";
 
@@ -118,12 +119,11 @@ export function ReplayPage({ t, lang }: { t: Strings; lang: Lang }) {
       <h1>{t.replay_title}</h1>
       <p className="lede">{t.replay_sub}</p>
       <div className="replay-bar">
-        <label className="field">
-          <span className="field-k">{t.night_of}</span>
-          <select value={night} onChange={(e) => setNight(e.target.value)}>
-            {nights.map((n) => <option key={n.night} value={n.night}>{n.night} · {t.peak_word} {fmtPpb(n.peak_ppb)} ppb{n.featured ? ` ★ ${t.replay_featured}` : ""}</option>)}
-          </select>
-        </label>
+        <div className="field">
+          <span className="field-k" id="night-k">{t.night_of}</span>
+          <Select id="night" value={night} onChange={setNight} ariaLabel={t.night_of}
+            groups={[{ options: nights.map((n) => ({ value: n.night, label: `${n.night} · ${t.peak_word} ${fmtPpb(n.peak_ppb)} ppb${n.featured ? ` ★ ${t.replay_featured}` : ""}` })) }]} />
+        </div>
         <p className="replay-note"><Icon name="warn" size={15} /><span>{t.replay_label}</span></p>
       </div>
       {loading && <p className="muted">{t.computing}</p>}
@@ -133,16 +133,14 @@ export function ReplayPage({ t, lang }: { t: Strings; lang: Lang }) {
           <section className="replay-alert">
             <div className="replay-alert-head">
               <h2>{t.alert_card_title.replace("{time}", alertTime)}</h2>
-              <label className="field field-inline">
+              <div className="field field-inline">
                 <span className="field-k">{t.alert_place_label}</span>
-                <select value={recId ?? ""} onChange={(e) => setRec(e.target.value)}>
-                  {(["neighborhood", "school"] as const).map((k) => (
-                    <optgroup key={k} label={k === "school" ? t.school : t.neighborhood}>
-                      {recs.filter((r) => r.kind === k).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                    </optgroup>
-                  ))}
-                </select>
-              </label>
+                <Select id="alert-place" value={recId ?? ""} onChange={setRec} ariaLabel={t.alert_place_label}
+                  groups={(["neighborhood", "school"] as const).map((k) => ({
+                    label: k === "school" ? t.school : t.neighborhood,
+                    options: recs.filter((r) => r.kind === k).map((r) => ({ value: r.id, label: r.name })),
+                  }))} />
+              </div>
             </div>
             <AlertCard night={night} receptorId={recId} t={t} lang={lang} />
             <p className="muted small">{t.alert_preview_note}</p>

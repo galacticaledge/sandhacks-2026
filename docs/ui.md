@@ -70,3 +70,21 @@ The forecast level colors are **not** themed. They stay the SDAPCD green/yellow/
 - Monitor charts: 2-column grid at desktop widths (third monitor wraps to the next row), 1 column below 900px. Each card has aligned rows (title, one-line comparison, 280px chart, key).
 - All charts share round y-axis ticks (0, 10, 20, 30, ...) and a fixed axis width, so axes line up card to card. Small negative monitor readings (instrument noise) are plotted at 0, matching how they are displayed elsewhere.
 - The 30 ppb line is a 2px dashed orange line with a bold label, and it appears in each card's key.
+
+## Type scale
+
+Defined once at the end of `web/src/styles.css` (it overrides earlier sizes):
+
+| Role | Size | Weight | Notes |
+|---|---|---|---|
+| Page title (`.page > h1`, Forecast hero title) | 28px | 600 | uppercase, +0.02em tracking |
+| Section heading (`h2`) | 17px | 600 | |
+| Card title (`h3`, card `h2`, panel headers, legend title) | 15px | 600 | |
+| Body (`p`, `li`, `td`, lede, form labels) | 14px | 400 | |
+| Supporting (`.small`, captions, keys, table headers, chips, badges, field labels, sidebar card) | 12px | 400 | |
+
+Data numbers (stat tiles, monitor ppb, gauge value) and navigation keep their own sizes.
+
+## Dropdowns
+
+`components/Select.tsx`: a listbox that always opens directly below its button (max 320px, scrolls, and scrolls the page into view on small screens). Keyboard: arrows, Home/End, Enter/Space, Escape, type-ahead. Used for Replay's "Night of" and "Show the alert for". Classes use the `dd-` prefix (`.sel` is the selected map marker).
